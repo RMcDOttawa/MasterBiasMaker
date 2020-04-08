@@ -48,20 +48,6 @@ class PreferencesWindow(QDialog):
             self.ui.dispositionNothingRB.setChecked(True)
         self.ui.subFolderName.setText(preferences.get_disposition_subfolder_name())
 
-        # Precalibration information
-        precalibration_option = preferences.get_precalibration_type()
-        if precalibration_option == Constants.CALIBRATION_PROMPT:
-            self.ui.promptPreCalFileRB.setChecked(True)
-        elif precalibration_option == Constants.CALIBRATION_FIXED_FILE:
-            self.ui.FixedPreCalFileRB.setChecked(True)
-        elif precalibration_option == Constants.CALIBRATION_NONE:
-            self.ui.noPreClalibrationRB.setChecked(True)
-        else:
-            assert precalibration_option == Constants.CALIBRATION_PEDESTAL
-            self.ui.fixedPedestalRB.setChecked(True)
-        self.ui.fixedPedestalAmount.setText(str(preferences.get_precalibration_pedestal()))
-        self.ui.precalibrationPathDisplay.setText(preferences.get_precalibration_fixed_path())
-
         # Set up responders for buttons and fields
         self.ui.combineMeanRB.clicked.connect(self.combine_mean_button_clicked)
         self.ui.combineMedianRB.clicked.connect(self.combine_median_button_clicked)
@@ -71,19 +57,12 @@ class PreferencesWindow(QDialog):
         self.ui.dispositionNothingRB.clicked.connect(self.disposition_nothing_clicked)
         self.ui.dispositionSubFolderRB.clicked.connect(self.disposition_sub_folder_clicked)
 
-        self.ui.noPreClalibrationRB.clicked.connect(self.precalibration_none_clicked)
-        self.ui.fixedPedestalRB.clicked.connect(self.precalibration_pedestal_clicked)
-        self.ui.promptPreCalFileRB.clicked.connect(self.precalibration_prompt_clicked)
-        self.ui.FixedPreCalFileRB.clicked.connect(self.precalibration_file_clicked)
-
-        self.ui.selectPreCalFile.clicked.connect(self.select_precalibration_file_clicked)
         self.ui.closeButton.clicked.connect(self.close_button_clicked)
 
         # Input fields
         self.ui.minMaxNumDropped.editingFinished.connect(self.min_max_drop_changed)
         self.ui.sigmaThreshold.editingFinished.connect(self.sigma_threshold_changed)
         self.ui.subFolderName.editingFinished.connect(self.sub_folder_name_changed)
-        self.ui.fixedPedestalAmount.editingFinished.connect(self.pedestal_amount_changed)
 
         self.enableFields()
 
@@ -116,43 +95,6 @@ class PreferencesWindow(QDialog):
         """Move input files to sub-folder radio button selected"""
         self._preferences.set_input_file_disposition(Constants.INPUT_DISPOSITION_SUBFOLDER)
         self.enableFields()
-
-    def precalibration_none_clicked(self):
-        """User has selected 'no precalibration' option. Store that preference."""
-        self._preferences.set_precalibration_type(Constants.CALIBRATION_NONE)
-        self.enableFields()
-
-    def precalibration_pedestal_clicked(self):
-        """User has selected 'pedestal precalibration' option. Store that preference."""
-        self._preferences.set_precalibration_type(Constants.CALIBRATION_PEDESTAL)
-        self.enableFields()
-
-    def precalibration_prompt_clicked(self):
-        """User has selected 'prompt for precalibration file' option. Store that preference."""
-        self._preferences.set_precalibration_type(Constants.CALIBRATION_PROMPT)
-        self.enableFields()
-
-    def precalibration_file_clicked(self):
-        """User has selected 'fixed precalibration file' option. Store that preference."""
-        self._preferences.set_precalibration_type(Constants.CALIBRATION_FIXED_FILE)
-        self.enableFields()
-
-    def select_precalibration_file_clicked(self):
-        (file_name, _) = QFileDialog.getOpenFileName(parent=self,
-                                                     caption="Select dark or bias file",
-                                                     filter="FITS files(*.fit *.fits)",
-                                                     options=QFileDialog.ReadOnly)
-        if len(file_name) > 0:
-            self._preferences.set_precalibration_fixed_path(file_name)
-
-    def pedestal_amount_changed(self):
-        """User has entered value in precalibration pedestal field.  Validate and save"""
-        proposed_new_number: str = self.ui.fixedPedestalAmount.text()
-        new_number = Validators.valid_int_in_range(proposed_new_number, 0, 32767)
-        valid = new_number is not None
-        if valid:
-            self._preferences.set_precalibration_pedestal(new_number)
-        SharedUtils.background_validity_color(self.ui.fixedPedestalAmount, valid)
 
     def min_max_drop_changed(self):
         """the field giving the number of minimum and maximum values to drop has been changed.
@@ -190,10 +132,6 @@ class PreferencesWindow(QDialog):
         self.ui.sigmaThreshold.setEnabled(self._preferences.get_master_combine_method() == Constants.COMBINE_SIGMA_CLIP)
         self.ui.subFolderName.setEnabled(
             self._preferences.get_input_file_disposition() == Constants.INPUT_DISPOSITION_SUBFOLDER)
-        self.ui.fixedPedestalAmount.setEnabled(
-            self._preferences.get_precalibration_type() == Constants.CALIBRATION_PEDESTAL)
-        self.ui.selectPreCalFile.setEnabled(
-            self._preferences.get_precalibration_type() == Constants.CALIBRATION_FIXED_FILE)
 
     def close_button_clicked(self):
         """Close button has been clicked - close the preferences window"""

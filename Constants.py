@@ -14,13 +14,6 @@ class Constants:
     INPUT_DISPOSITION_NOTHING = -8357  # Do nothing to the files
     INPUT_DISPOSITION_SUBFOLDER = -8361  # Move to a given named subfolder
 
-    # What kind of calibration preprocessing is applied to images before combining?
-    CALIBRATION_NONE = -9717  # Don't do any precalibration on the image files
-    CALIBRATION_PEDESTAL = -9715  # Subtract a fixed pedestal number from all files
-    CALIBRATION_FIXED_FILE = -9713  # Precalibration file path is permanently stored
-    CALIBRATION_PROMPT = -9711  # Prompt user for precalibration file
-
-    PRECALIBRATION_DEFAULT_PEDESTAL = 100  # If pedestal used, this is the default - subtract 100 from pixels
 
     @classmethod
     def combine_method_string(cls, method: int) -> str:
@@ -42,14 +35,3 @@ class Constants:
             assert value == cls.INPUT_DISPOSITION_SUBFOLDER
             return "SubFolder"
 
-    @classmethod
-    def calibration_string(cls, value: int) -> str:
-        if value == cls.CALIBRATION_PROMPT:
-            return "Prompt User"
-        elif value == cls.CALIBRATION_FIXED_FILE:
-            return "Fixed File"
-        elif value == cls.CALIBRATION_NONE:
-            return "None"
-        else:
-            assert value == cls.CALIBRATION_PEDESTAL
-            return "Pedestal"

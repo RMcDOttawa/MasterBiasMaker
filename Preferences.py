@@ -29,14 +29,6 @@ class Preferences(QSettings):
     # Main window size - so last window resizing is remembered
     MAIN_WINDOW_SIZE = "main_window_size"
 
-    # What kind of precalibration is done to images before combining
-    # Gives an integer from the constants class CALIBRATION_
-    IMAGE_PRE_CALIBRATION = "image_pre_calibration"
-    # Pedestal value if pedestal option chosen
-    PRE_CALIBRATION_PEDESTAL = "pre_calibration_pedestal"
-    # File path if bias/dark file is to be subtracted
-    PRE_CALIBRATION_FILE = "pre_calibration_file"
-
     def __init__(self):
         QSettings.__init__(self, "EarwigHavenObservatory.com", "MasterBiasMaker_b")
         # print(f"Preferences file path: {self.fileName()}")
@@ -110,36 +102,3 @@ class Preferences(QSettings):
 
     def set_main_window_size(self, size: QSize):
         self.setValue(self.MAIN_WINDOW_SIZE, size)
-
-    # Pre-calibration method
-
-    def get_precalibration_type(self) -> int:
-        result = int(self.value(self.IMAGE_PRE_CALIBRATION, defaultValue=Constants.CALIBRATION_NONE))
-        assert (result == Constants.CALIBRATION_NONE) \
-               or (result == Constants.CALIBRATION_FIXED_FILE) \
-               or (result == Constants.CALIBRATION_PROMPT) \
-               or (result == Constants.CALIBRATION_PEDESTAL)
-        return result
-
-    def set_precalibration_type(self, value: int):
-        assert (value == Constants.CALIBRATION_NONE) \
-               or (value == Constants.CALIBRATION_FIXED_FILE) \
-               or (value == Constants.CALIBRATION_PROMPT) \
-               or (value == Constants.CALIBRATION_PEDESTAL)
-        self.setValue(self.IMAGE_PRE_CALIBRATION, value)
-
-    # Pedestal value used if pre-calibration option "pedestal" is chosen
-
-    def get_precalibration_pedestal(self) -> int:
-        return int(self.value(self.PRE_CALIBRATION_PEDESTAL, defaultValue=Constants.PRECALIBRATION_DEFAULT_PEDESTAL))
-
-    def set_precalibration_pedestal(self, value: int):
-        self.setValue(self.PRE_CALIBRATION_PEDESTAL, value)
-
-    # File path if fixed bias/dark file is to be subtracted
-
-    def get_precalibration_fixed_path(self) -> str:
-        return str(self.value(self.PRE_CALIBRATION_FILE, defaultValue=""))
-
-    def set_precalibration_fixed_path(self, path: str):
-        self.setValue(self.PRE_CALIBRATION_FILE, path)

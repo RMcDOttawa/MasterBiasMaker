@@ -54,21 +54,6 @@ class MainWindow(QMainWindow):
             self.ui.dispositionNothingRB.setChecked(True)
         self.ui.subFolderName.setText(preferences.get_disposition_subfolder_name())
 
-        # Pre-calibration options
-
-        precalibration_option = preferences.get_precalibration_type()
-        if precalibration_option == Constants.CALIBRATION_PROMPT:
-            self.ui.promptPreCalFileRB.setChecked(True)
-        elif precalibration_option == Constants.CALIBRATION_FIXED_FILE:
-            self.ui.fixedPreCalFileRB.setChecked(True)
-        elif precalibration_option == Constants.CALIBRATION_NONE:
-            self.ui.noPreClalibrationRB.setChecked(True)
-        else:
-            assert precalibration_option == Constants.CALIBRATION_PEDESTAL
-            self.ui.fixedPedestalRB.setChecked(True)
-        self.ui.fixedPedestalAmount.setText(str(preferences.get_precalibration_pedestal()))
-        self.ui.precalibrationPathDisplay.setText(preferences.get_precalibration_fixed_path())
-
         # Set up the file table
         self._table_model = FitsFileTableModel(self.ui.ignoreFileType.isChecked())
         self.ui.filesTable.setModel(self._table_model)
@@ -128,14 +113,6 @@ class MainWindow(QMainWindow):
         # Main "combine" button
         self.ui.combineSelectedButton.clicked.connect(self.combine_selected_clicked)
 
-        # Buttons and fields in precalibration area
-        self.ui.noPreClalibrationRB.clicked.connect(self.precalibration_radio_group_clicked)
-        self.ui.fixedPedestalRB.clicked.connect(self.precalibration_radio_group_clicked)
-        self.ui.promptPreCalFileRB.clicked.connect(self.precalibration_radio_group_clicked)
-        self.ui.fixedPreCalFileRB.clicked.connect(self.precalibration_radio_group_clicked)
-        self.ui.selectPreCalFile.clicked.connect(self.select_precalibration_file_clicked)
-        self.ui.fixedPedestalAmount.editingFinished.connect(self.pedestal_amount_changed)
-
     # Certain initialization must be done after "__init__" is finished.
     def set_up_ui(self):
         """Perform initialization that requires class init to be finished"""
@@ -178,16 +155,6 @@ class MainWindow(QMainWindow):
         self.enable_fields()
         self.enable_buttons()
 
-    def pedestal_amount_changed(self):
-        """the field giving the fixed calibration pedestal amount has been changed.
-        Validate it (integer > 0) and store if valid"""
-        proposed_new_number: str = self.ui.fixedPedestalAmount.text()
-        new_number = Validators.valid_int_in_range(proposed_new_number, 0, 32767)
-        valid = new_number is not None
-        SharedUtils.background_validity_color(self.ui.fixedPedestalAmount, valid)
-        self._field_validity[self.ui.fixedPedestalAmount] = valid
-        self.enable_buttons()
-
     def min_max_drop_changed(self):
         """the field giving the number of minimum and maximum values to drop has been changed.
         Validate it (integer > 0) and store if valid"""
@@ -221,8 +188,6 @@ class MainWindow(QMainWindow):
     def enable_fields(self):
         """Enable text fields depending on state of various radio buttons"""
 
-        self.ui.fixedPedestalAmount.setEnabled(self.ui.fixedPedestalRB.isChecked())
-
         # Enable Algorithm fields depending on which algorithm is selected
         self.ui.minMaxNumDropped.setEnabled(self.ui.combineMinMaxRB.isChecked())
         self.ui.sigmaThreshold.setEnabled(self.ui.combineSigmaRB.isChecked())
@@ -255,8 +220,6 @@ class MainWindow(QMainWindow):
         """Enable buttons on the main window depending on validity and settings
         of other controls"""
 
-        self.ui.selectPreCalFile.setEnabled(self.ui.fixedPreCalFileRB.isChecked())
-
         # "combineSelectedButton" is enabled only if
         #   - No text fields are in error state
         #   - At least one row in the file table is selected
@@ -268,30 +231,14 @@ class MainWindow(QMainWindow):
         selected = self.ui.filesTable.selectionModel().selectedRows()
         calibration_path_ok = True
         sigma_clip_enough_files = (not self.ui.combineSigmaRB.isChecked()) or len(selected) >= 3
-        if self.ui.fixedPreCalFileRB.isChecked():
-            calibration_path_ok = os.path.isfile(self.ui.precalibrationPathDisplay.text())
         self.ui.combineSelectedButton.setEnabled(combine_enabled and len(selected) > 0
                                                  and self.min_max_enough_files(len(selected))
-                                                 and sigma_clip_enough_files
-                                                 and calibration_path_ok)
+                                                 and sigma_clip_enough_files)
 
         # Enable select all and none only if rows in table
         any_rows = self._table_model.rowCount(QModelIndex()) > 0
         self.ui.selectNoneButton.setEnabled(any_rows)
         self.ui.selectAllButton.setEnabled(any_rows)
-
-    def precalibration_radio_group_clicked(self):
-        self.enable_buttons()
-        self.enable_fields()
-
-    def select_precalibration_file_clicked(self):
-        (file_name, _) = QFileDialog.getOpenFileName(parent=self, caption="Select dark or bias file",
-                                                     filter="FITS files(*.fit *.fits)",
-                                                     options=QFileDialog.ReadOnly)
-        if len(file_name) > 0:
-            self.ui.precalibrationPathDisplay.setText(file_name)
-        self.enable_fields()
-        self.enable_buttons()
 
     def preferences_menu_triggered(self):
         """Respond to preferences menu by opening preferences dialog"""
@@ -429,34 +376,6 @@ class MainWindow(QMainWindow):
                                                      mean_exposure, mean_temperature, filter_name,
                                                      f"Master flat Sigma Clipped "
                                                      f"(threshold {sigma_threshold}) Mean combined")
-
-    # Get description of any precalibration to be done
-    # Return flag if any precalibration, pedestal value, and image array if image file used.
-    # Image file might be read from pre-defined path, or might be read after prompting user
-
-    def get_precalibration_info(self) -> (bool, int, numpy.ndarray):
-        pre_calibration: bool
-        pedestal_value = None
-        image_data = None
-        if self.ui.fixedPedestalRB.isChecked():
-            pre_calibration = True
-            pedestal_value = int(self.ui.fixedPedestalAmount.text())
-        elif self.ui.fixedPreCalFileRB.isChecked():
-            pre_calibration = True
-            image_data = RmFitsUtil.fits_data_from_path(self.ui.precalibrationPathDisplay.text())
-        elif self.ui.promptPreCalFileRB.isChecked():
-            (file_name, _) = QFileDialog.getOpenFileName(parent=self, caption="Select dark or bias file",
-                                                         filter="FITS files(*.fit *.fits)",
-                                                         options=QFileDialog.ReadOnly)
-            if len(file_name) > 0:
-                image_data = RmFitsUtil.fits_data_from_path(file_name)
-                pre_calibration = True
-            else:
-                pre_calibration = False
-        else:
-            assert (self.ui.noPreClalibrationRB.isChecked())
-            pre_calibration = False
-        return pre_calibration, pedestal_value, image_data
 
 
     # We're done combining files.  The user may want us to do something with the original input files
