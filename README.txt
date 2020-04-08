@@ -8,11 +8,6 @@ MasterBiasMaker --option --option ...   <list of FITs files>
 Options
     -g   or --gui               Force gui interface even though command line used
 
-    Precalibration options: if none given, uses what is set in GUI preferences
-    -np  or --noprecal          No precalibration of input files
-    -p   or --pedestal <n>      Precalibrate by subtracting pedestal value <n>
-    -b   or --bias <path>       Precalibrate by subtracting bias file <path>
-
     Combination algorithm:  if none, uses GUI preferences
     -m   or --mean              Combine files with simple mean
     -n   or --median            Combine files with simple median
@@ -22,8 +17,7 @@ Options
     -v   or --moveinputs <dir>  After successful processing, move input files to directory
 
     -t   or --ignoretype        Ignore the internal FITS file type (flat, bias, etc)
-    -f   or --ignorefilter      Ignore the internal FITS filter name
-    
+
     -o   or --output <path>		Output file to this location (default: with input files)
 
 Examples:
