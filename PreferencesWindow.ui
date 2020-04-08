@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>452</width>
+    <height>321</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Preferences</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_2">
+   <item row="2" column="0">
+    <widget class="QPushButton" name="closeButton">
+     <property name="toolTip">
+      <string>Close this preferences window</string>
+     </property>
+     <property name="text">
+      <string>Close</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <spacer name="horizontalSpacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>359</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="0" column="0" colspan="2">
+    <widget class="QFrame" name="CombineMethod">
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="1" column="0">
+       <widget class="QRadioButton" name="combineMeanRB">
+        <property name="toolTip">
+         <string>Simple mean. Best signal-to-noise, but outliers (satellites etc) will show up.</string>
+        </property>
+        <property name="text">
+         <string>Mean</string>
+        </property>
+        <attribute name="buttonGroup">
+         <string notr="true">combineMethodGroup</string>
+        </attribute>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QRadioButton" name="combineMedianRB">
+        <property name="toolTip">
+         <string>Simple median. Rejects outliers, but signal-to-noise not as good as with Mean.</string>
+        </property>
+        <property name="text">
+         <string>Median</string>
+        </property>
+        <attribute name="buttonGroup">
+         <string notr="true">combineMethodGroup</string>
+        </attribute>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QRadioButton" name="combineMinMaxRB">
+        <property name="toolTip">
+         <string>Drop min and max values, then Mean. Works well when outliers are hot or black pixels.</string>
+        </property>
+        <property name="text">
+         <string>Min/Max Clip</string>
+        </property>
+        <attribute name="buttonGroup">
+         <string notr="true">combineMethodGroup</string>
+        </attribute>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string># Dropped from each end</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
+       <widget class="QLineEdit" name="minMaxNumDropped">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How many min and max values are dropped?  (1 = drop all instances of the max and all instances of the min; 2 = all instances of max and next-to-max and all instances of 2 min values, etc.)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QRadioButton" name="combineSigmaRB">
+        <property name="toolTip">
+         <string>Drop pixels more than a given sigma ratio from the mean, then mean the rest. Good rejection of anomalous data.</string>
+        </property>
+        <property name="text">
+         <string>Sigma Clip</string>
+        </property>
+        <attribute name="buttonGroup">
+         <string notr="true">combineMethodGroup</string>
+        </attribute>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Sigma rejection threshold</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="2">
+       <widget class="QLineEdit" name="sigmaThreshold">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sigma ratio (how many standard deviations the value is from the mean) beyond which data are dropped.  Try 2.0 then experiment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0" colspan="3">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Default Combination Algorithm&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="2">
+    <widget class="QFrame" name="frame_2">
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_3">
+      <item row="0" column="0" colspan="2">
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>&lt;html&gt;&lt;b&gt;Disposition of Input Files after Successful Combine&lt;/b&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QRadioButton" name="dispositionNothingRB">
+        <property name="toolTip">
+         <string>Leave the input files alone.</string>
+        </property>
+        <property name="text">
+         <string>Do Nothing</string>
+        </property>
+        <attribute name="buttonGroup">
+         <string notr="true">dispositionGroup</string>
+        </attribute>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QRadioButton" name="dispositionSubFolderRB">
+        <property name="toolTip">
+         <string>Move the input files to a sub-folder (in the same directory as the input files) with the given name</string>
+        </property>
+        <property name="text">
+         <string>Move to Sub-Folder Named:</string>
+        </property>
+        <attribute name="buttonGroup">
+         <string notr="true">dispositionGroup</string>
+        </attribute>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLineEdit" name="subFolderName">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Name for the folder to move the processed files. Optionally this name can contain %d, %t, or %f, which will be replaced by the date, time, and filter name, respectively.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+ <buttongroups>
+  <buttongroup name="dispositionGroup"/>
+  <buttongroup name="combineMethodGroup"/>
+  <buttongroup name="precalibrationGroup"/>
+ </buttongroups>
+</ui>
