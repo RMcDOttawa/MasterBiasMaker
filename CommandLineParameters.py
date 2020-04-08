@@ -16,7 +16,6 @@ class CommandLineParameters:
         self._min_max_drop: int = 0
         self._sigma_threshold: float = 0
         self._ignore_fits_type: bool = False
-        self._ignore_filter_type: bool = False
         self._disposition_move: bool = False
         self._disposition_folder: str = ""
         self._output_path: str = ""
@@ -64,12 +63,6 @@ class CommandLineParameters:
     def set_ignore_fits_type(self, value: bool):
         self._ignore_fits_type = value
 
-    def get_ignore_filter_type(self) -> bool:
-        return self._ignore_filter_type
-
-    def set_ignore_filter_type(self, value: bool):
-        self._ignore_filter_type = value
-
     def get_disposition_move(self) -> bool:
         return self._disposition_move
 
@@ -102,7 +95,6 @@ class CommandLineParameters:
         print(f"min_max_drop: {self._min_max_drop}")
         print(f"sigma_threshold: {self._sigma_threshold}")
         print(f"ignore_fits_type: {self._ignore_fits_type}")
-        print(f"ignore_filter_type: {self._ignore_filter_type}")
         print(f"disposition_move: {self._disposition_move}")
         print(f"disposition_folder: {self._disposition_folder}")
         print(f"output_path: {self._output_path}")

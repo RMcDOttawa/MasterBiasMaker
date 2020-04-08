@@ -59,12 +59,11 @@ class SharedUtils:
     # In given string, replace all occurrences of %d with date and %t with time
     # In YYYY-MM-DD  and HH-MM-SS formats
     @classmethod
-    def substitute_date_time_filter_in_string(cls, output_path: str, filter_name: str) -> str:
+    def substitute_date_time_filter_in_string(cls, output_path: str) -> str:
         now = datetime.now()
         year = now.strftime("%Y-%m-%d")
         time = now.strftime("%H-%M-%S")
         return output_path.replace("%d", year).replace("%D", year).replace("%t", time).replace("%T", time) \
-            .replace("%f", filter_name).replace("%F", filter_name)
 
 
     # Find the most common filter name in the given collection
@@ -86,10 +85,10 @@ class SharedUtils:
     # exist, create it.
 
     @classmethod
-    def dispose_files_to_sub_folder(cls, descriptors: [FileDescriptor], sub_folder_name: str, filter_name: str):
+    def dispose_files_to_sub_folder(cls, descriptors: [FileDescriptor], sub_folder_name: str):
 
         # Get folder name with special values substituted
-        actual_folder_name = SharedUtils.substitute_date_time_filter_in_string(sub_folder_name, filter_name)
+        actual_folder_name = SharedUtils.substitute_date_time_filter_in_string(sub_folder_name)
         subfolder_located_directory = cls.make_name_a_subfolder(descriptors[0], actual_folder_name)
 
         # Create the folder if it doesn't already exist (and make sure we're not clobbering a file)

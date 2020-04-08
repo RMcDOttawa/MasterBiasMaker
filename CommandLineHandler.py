@@ -58,36 +58,6 @@ class CommandLineHandler:
             print("No file names given")
             valid = False
 
-        # Pre-calibration method and related info
-
-        precalibration_type: int
-        if args.noprecal:
-            precalibration_type = Constants.CALIBRATION_NONE
-        elif args.pedestal is not None:
-            precalibration_type = Constants.CALIBRATION_PEDESTAL
-            if args.pedestal > 0:
-                parameters.set_pedestal(args.pedestal)
-            else:
-                print(f"Pedestal value must be greater than zero, not {args.pedestal}")
-                valid = False
-        elif args.bias is not None:
-            precalibration_type = Constants.CALIBRATION_FIXED_FILE
-            if os.path.isfile(args.bias):
-                parameters.set_fixed_calibration_file(args.bias)
-            else:
-                print(f"Calibration file does not exist: {args.bias}")
-                valid = False
-        else:
-            # Nothing in the command line, use preferences.
-            precalibration_type = self._preferences.get_precalibration_type()
-            parameters.set_pedestal(self._preferences.get_precalibration_pedestal())
-            parameters.set_fixed_calibration_file(self._preferences.get_precalibration_fixed_path())
-            if precalibration_type == Constants.CALIBRATION_PROMPT:
-                print("No precalibration method specified.  Preferences says \"prompt user\""
-                      " but that method is not allowed unless running the GUI")
-                valid = False
-        parameters.set_pre_calibration_type(precalibration_type)
-
         # Master frame combination algorithm and parameters
         combination_type: int
         if args.mean:
@@ -116,11 +86,9 @@ class CommandLineHandler:
             parameters.set_sigma_threshold(self._preferences.get_sigma_clip_threshold())
         parameters.set_combine_method(combination_type)
 
-        # Insist on same file type and same filter name in all files?
+        # Insist on same file type in all files?
         if args.ignoretype:
             parameters.set_ignore_fits_type(True)
-        if args.ignorefilter:
-            parameters.set_ignore_filter_type(True)
 
         # What to do with input files after a successful run
         if args.moveinputs is not None:
@@ -141,21 +109,14 @@ class CommandLineHandler:
         file_descriptors = self.get_file_descriptors(parameters.get_file_names())
         # check sizes are all the same
         if RmFitsUtil.all_compatible_sizes(file_descriptors):
-            # check types are all flat
+            # check types are all bias
             if parameters.get_ignore_fits_type() \
-                    or RmFitsUtil.all_of_type(file_descriptors, FileDescriptor.FILE_TYPE_FLAT):
-                # check filter names are all the same
-                if parameters.get_ignore_filter_type() \
-                        or RmFitsUtil.all_same_filter(file_descriptors):
-                    output_filter_name = self.get_output_filter_name(file_descriptors)
-                    output_file_path = self.make_output_path(parameters, file_descriptors, output_filter_name)
-                    self.write_combined_files(parameters, output_file_path, output_filter_name)
-                    self.input_file_disposition(parameters, file_descriptors, output_filter_name)
-                else:
-                    print("Files do not all have same filter name. (Use -f to suppress this check.)")
-                    success = False
+                    or RmFitsUtil.all_of_type(file_descriptors, FileDescriptor.FILE_TYPE_BIAS):
+                output_file_path = self.make_output_path(parameters, file_descriptors)
+                self.write_combined_files(parameters, output_file_path, self.get_output_filter_name(file_descriptors))
+                self.input_file_disposition(parameters, file_descriptors)
             else:
-                print("Files are not all flats.  (Use -t option to suppress this check.)")
+                print("Files are not all Bias files.  (Use -t option to suppress this check.)")
                 success = False
         else:
             print("Files are not all the same image dimensions, aborting.")
@@ -179,11 +140,10 @@ class CommandLineHandler:
 
     def make_output_path(self,
                          parameters: CommandLineParameters,
-                         file_descriptors: [FileDescriptor],
-                         filter_name: str) -> str:
+                         file_descriptors: [FileDescriptor]) -> str:
         """Create a suitable output file name, fully-qualified"""
         if parameters.get_output_path() == "":
-            return self.create_output_path(file_descriptors[0], filter_name)
+            return self.create_output_path(file_descriptors[0], parameters.get_combine_method())
         else:
             return parameters.get_output_path()
 
@@ -196,13 +156,13 @@ class CommandLineHandler:
         return SharedUtils.most_common_filter_name(file_descriptors)
 
     #
-    #   Create a combined master flat file usign the given algorithm and write it to the output file
+    #   Create a combined master bias file usign the given algorithm and write it to the output file
     #
     def write_combined_files(self,
                              parameters: CommandLineParameters,
                              output_file_path: str,
                              output_filter_name: str):
-        """Combine files to a master flat, written to the given-named output file"""
+        """Combine files to a master bias, written to the given-named output file"""
         pre_calibrate: bool
         pedestal_value: int
         calibration_image: numpy.ndarray
@@ -217,14 +177,14 @@ class CommandLineHandler:
                     RmFitsUtil.mean_exposure_and_temperature(parameters.get_file_names())
                 RmFitsUtil.create_combined_fits_file(output_file_path, mean_data,
                                                      mean_exposure, mean_temperature, output_filter_name,
-                                                     "Master flat MEAN combined")
+                                                     "Master Bias MEAN combined")
         elif combination_method == Constants.COMBINE_MEDIAN:
             median_data = RmFitsUtil.combine_median(file_names, pre_calibrate, pedestal_value, calibration_image)
             if median_data is not None:
                 (mean_exposure, mean_temperature) = RmFitsUtil.mean_exposure_and_temperature(file_names)
                 RmFitsUtil.create_combined_fits_file(output_file_path, median_data,
                                                      mean_exposure, mean_temperature, output_filter_name,
-                                                     "Master flat MEDIAN combined")
+                                                     "Master Bias MEDIAN combined")
         elif combination_method == Constants.COMBINE_MINMAX:
             number_dropped_points = parameters.get_min_max_drop()
             min_max_clipped_mean = RmFitsUtil.combine_min_max_clip(file_names, number_dropped_points,
@@ -233,7 +193,7 @@ class CommandLineHandler:
                 (mean_exposure, mean_temperature) = RmFitsUtil.mean_exposure_and_temperature(file_names)
                 RmFitsUtil.create_combined_fits_file(output_file_path, min_max_clipped_mean,
                                                      mean_exposure, mean_temperature, output_filter_name,
-                                                     f"Master flat Min/Max Clipped "
+                                                     f"Master Bias Min/Max Clipped "
                                                      f"(drop {number_dropped_points}) Mean combined")
         else:
             assert combination_method == Constants.COMBINE_SIGMA_CLIP
@@ -244,7 +204,7 @@ class CommandLineHandler:
                 (mean_exposure, mean_temperature) = RmFitsUtil.mean_exposure_and_temperature(file_names)
                 RmFitsUtil.create_combined_fits_file(output_file_path, sigma_clipped_mean,
                                                      mean_exposure, mean_temperature, output_filter_name,
-                                                     f"Master flat Sigma Clipped "
+                                                     f"Master Bias Sigma Clipped "
                                                      f"(threshold {sigma_threshold}) Mean combined")
 
     #   Get the pre-calibration info for the combine routines
@@ -269,9 +229,9 @@ class CommandLineHandler:
         return pre_calibration, pedestal_value, image_data
 
     # Create a file name for the output file
-    #   of the form MASTER-FLAT-yyyy-mm-dd-hh-mm-FLAT-temp-x-y-bin-filter.fit
-
-    def create_output_path(self, sample_input_file: FileDescriptor, filter_name: str):
+    #   of the form BIAS-Mean-yyyy-mm-dd-hh-mm-temp-x-y-bin.fit
+    @classmethod
+    def create_output_path(cls, sample_input_file: FileDescriptor, combine_method: int):
         """Create an output file name in the case where one wasn't specified"""
         # Get directory of sample input file
         directory_prefix = os.path.dirname(sample_input_file.get_absolute_path())
@@ -282,19 +242,19 @@ class CommandLineHandler:
         temperature = f"{sample_input_file.get_temperature():.1f}"
         dimensions = f"{sample_input_file.get_x_dimension()}x{sample_input_file.get_y_dimension()}"
         binning = f"{sample_input_file.get_binning()}x{sample_input_file.get_binning()}"
+        method = Constants.combine_method_string(combine_method)
 
         # Make name
-        file_path = f"{directory_prefix}/MASTER-FLAT-{date_time_string}-{temperature}-{dimensions}" \
-                    f"-{binning}-{filter_name}.fit"
+        file_path = f"{directory_prefix}/BIAS-{method}-{date_time_string}-{temperature}-{dimensions}" \
+                    f"-{binning}.fit"
         return file_path
 
     # Check if the user wanted us to move the input files after combining them.
     # If so, move them to the named subdirectory
 
     def input_file_disposition(self, parameters: CommandLineParameters,
-                               descriptors: [FileDescriptor],
-                               filter_name: str):
+                               descriptors: [FileDescriptor]):
         """Dispose of input files if so requested"""
         if parameters.get_disposition_move():
             # User wants us to move the input files into a sub-folder
-            SharedUtils.dispose_files_to_sub_folder(descriptors, parameters.get_disposition_folder(), filter_name)
+            SharedUtils.dispose_files_to_sub_folder(descriptors, parameters.get_disposition_folder())

@@ -13,26 +13,15 @@ from MainWindow import MainWindow
 from Preferences import Preferences
 
 # Set up command line arguments
-arg_parser = ArgumentParser(description="Combine Flat-Frame FITS files into a master flat")
+arg_parser = ArgumentParser(description="Combine Bias-Frame FITS files into a master flat")
 arg_parser.add_argument("-g", "--gui", action="store_true",
                         help="Force GUI interface to open, ignoring other arguments")
 arg_parser.add_argument("-v", "--moveinputs", metavar="<directory>",
                         help="After successful processing, move input files to directory")
 arg_parser.add_argument("-t", "--ignoretype", action="store_true",
                         help="Ignore the internal FITS file type (flat, bias, etc)")
-arg_parser.add_argument("-f", "--ignorefilter", action="store_true",
-                        help="Ignore the internal FITS filter name")
 arg_parser.add_argument("-o", "--output", metavar="<output path>",
                         help="Name of output file (default: constructed name at location of inputs)")
-
-# precalibration options - only one may be used
-precal_arg_group = arg_parser.add_mutually_exclusive_group()
-precal_arg_group.add_argument("-np", "--noprecal", action="store_true",
-                              help="No precalibration of input files")
-precal_arg_group.add_argument("-p", "--pedestal", type=int, metavar="<pedestal value>",
-                              help="Precalibrate by subtracting pedestal value")
-precal_arg_group.add_argument("-b", "--bias", metavar="<Bias FITS file>",
-                              help="Precalibrate by subtracting bias file")
 
 # combination algorithm options - only one may be used
 method_arg_group = arg_parser.add_mutually_exclusive_group()

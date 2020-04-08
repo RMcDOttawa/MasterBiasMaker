@@ -1,12 +1,9 @@
-import os
-import shutil
-import sys
-
 import numpy
 from PyQt5 import uic
 from PyQt5.QtCore import QObject, QEvent, QModelIndex
 from PyQt5.QtWidgets import QMainWindow, QDialog, QHeaderView, QFileDialog, QMessageBox
 
+from CommandLineHandler import CommandLineHandler
 from Constants import Constants
 from FileDescriptor import FileDescriptor
 from FitsFileTableModel import FitsFileTableModel
@@ -229,7 +226,6 @@ class MainWindow(QMainWindow):
 
         combine_enabled = self.all_text_fields_valid()
         selected = self.ui.filesTable.selectionModel().selectedRows()
-        calibration_path_ok = True
         sigma_clip_enough_files = (not self.ui.combineSigmaRB.isChecked()) or len(selected) >= 3
         self.ui.combineSelectedButton.setEnabled(combine_enabled and len(selected) > 0
                                                  and self.min_max_enough_files(len(selected))
@@ -264,47 +260,38 @@ class MainWindow(QMainWindow):
         # Get the list of selected files
         selected_files: [FileDescriptor] = self.get_selected_file_descriptors()
         assert len(selected_files) > 0  # Or else the button would have been disabled
-        # Confirm that these are all flats, and are combinable (same binning and dimensions)
+        # Confirm that these are all bias frames, and can be combined (same binning and dimensions)
         if RmFitsUtil.all_compatible_sizes(selected_files):
             if self.ui.ignoreFileType.isChecked() \
-                    or RmFitsUtil.all_of_type(selected_files, FileDescriptor.FILE_TYPE_FLAT):
-                if self.ui.ignoreFilterName.isChecked() \
-                        or RmFitsUtil.all_same_filter(selected_files):
-                    # Get output file location
-                    output_file = self.get_output_file()
-                    if output_file is not None:
-                        # Get (most common) filter name in the set
-                        filter_name = SharedUtils.most_common_filter_name(selected_files)
-                        # Do the combination
-                        self.combine_files(selected_files, filter_name, output_file)
-                        # Optionally do something with the original input files
-                        self.handle_input_files_disposition(selected_files, filter_name)
-                        self.ui.filesTable.clearSelection()
-                        self.ui.message.setText("Combine completed")
-                    else:
-                        # User cancelled from the file dialog
-                        pass
+                    or RmFitsUtil.all_of_type(selected_files, FileDescriptor.FILE_TYPE_BIAS):
+                # Get output file location
+                suggested_output_path = CommandLineHandler.create_output_path(selected_files[0],
+                                                                              self.get_combine_method())
+                output_file = self.get_output_file(suggested_output_path)
+                if output_file is not None:
+                    # Get (most common) filter name in the set
+                    filter_name = SharedUtils.most_common_filter_name(selected_files)
+                    # Do the combination
+                    self.combine_files(selected_files, filter_name, output_file)
+                    # Optionally do something with the original input files
+                    self.handle_input_files_disposition(selected_files, filter_name)
+                    self.ui.filesTable.clearSelection()
+                    self.ui.message.setText("Combine completed")
                 else:
-                    not_flats_error = QMessageBox()
-                    not_flats_error.setText("The selected files do not all use the same filter")
-                    not_flats_error.setInformativeText("If you know the filters ar OK, they may not have proper FITS"
-                                                       + "data internally. Check the \"Allow different filter names\" "
-                                                         "box to proceed anyway.")
-                    not_flats_error.setStandardButtons(QMessageBox.Ok)
-                    not_flats_error.setDefaultButton(QMessageBox.Ok)
-                    _ = not_flats_error.exec_()
+                    # User cancelled from the file dialog
+                    pass
             else:
-                not_flats_error = QMessageBox()
-                not_flats_error.setText("The selected files are not all Flat Frames")
-                not_flats_error.setInformativeText("If you know the files are flats, they may not have proper FITS"
+                not_bias_error = QMessageBox()
+                not_bias_error.setText("The selected files are not all Bias Frames")
+                not_bias_error.setInformativeText("If you know the files are bias frames, they may not have proper FITS"
                                                    + " data internally. Check the \"Ignore FITS file type\" box"
                                                    + " to proceed anyway.")
-                not_flats_error.setStandardButtons(QMessageBox.Ok)
-                not_flats_error.setDefaultButton(QMessageBox.Ok)
-                _ = not_flats_error.exec_()
+                not_bias_error.setStandardButtons(QMessageBox.Ok)
+                not_bias_error.setDefaultButton(QMessageBox.Ok)
+                _ = not_bias_error.exec_()
         else:
             not_compatible = QMessageBox()
-            not_compatible.setText("The selected files are not combinable")
+            not_compatible.setText("The selected files can't be combined.")
             not_compatible.setInformativeText("To be combined into a master file, the files must have identical"
                                               + " X and Y dimensions, and identical Binning values.")
             not_compatible.setStandardButtons(QMessageBox.Ok)
@@ -322,10 +309,10 @@ class MainWindow(QMainWindow):
         return result
 
     # Prompt user for output file to receive combined file
-    def get_output_file(self) -> str:
+    def get_output_file(self, suggested_file_path: str) -> str:
         dialog = QFileDialog()
         dialog.setFileMode(QFileDialog.AnyFile)
-        (file_name, _) = dialog.getSaveFileName(parent=None, caption="Master File", directory="/",
+        (file_name, _) = dialog.getSaveFileName(parent=None, caption="Master File", directory=suggested_file_path,
                                                 filter="FITS files (*.FIT)")
         return None if len(file_name.strip()) == 0 else file_name
 
@@ -339,23 +326,23 @@ class MainWindow(QMainWindow):
         pre_calibrate: bool
         pedestal_value: int
         calibration_image: numpy.ndarray
-        (pre_calibrate, pedestal_value, calibration_image) = self.get_precalibration_info()
-
-        if self.ui.combineMeanRB.isChecked():
+        (pre_calibrate, pedestal_value, calibration_image) = (Constants.CALIBRATION_NONE, 0, None)
+        method = self.get_combine_method()
+        if method == Constants.COMBINE_MEAN:
             mean_data = RmFitsUtil.combine_mean(file_names, pre_calibrate, pedestal_value, calibration_image)
             if mean_data is not None:
                 (mean_exposure, mean_temperature) = RmFitsUtil.mean_exposure_and_temperature(file_names)
                 RmFitsUtil.create_combined_fits_file(substituted_file_name, mean_data,
                                                      mean_exposure, mean_temperature, filter_name,
-                                                     "Master flat MEAN combined")
-        elif self.ui.combineMedianRB.isChecked():
+                                                     "Master Bias MEAN combined")
+        elif method == Constants.COMBINE_MEDIAN:
             median_data = RmFitsUtil.combine_median(file_names, pre_calibrate, pedestal_value, calibration_image)
             if median_data is not None:
                 (mean_exposure, mean_temperature) = RmFitsUtil.mean_exposure_and_temperature(file_names)
                 RmFitsUtil.create_combined_fits_file(substituted_file_name, median_data,
                                                      mean_exposure, mean_temperature, filter_name,
-                                                     "Master flat MEDIAN combined")
-        elif self.ui.combineMinMaxRB.isChecked():
+                                                     "Master Bias MEDIAN combined")
+        elif method == Constants.COMBINE_MINMAX:
             number_dropped_points = int(self.ui.minMaxNumDropped.text())
             min_max_clipped_mean = RmFitsUtil.combine_min_max_clip(file_names, number_dropped_points,
                                                                    pre_calibrate, pedestal_value, calibration_image)
@@ -363,10 +350,10 @@ class MainWindow(QMainWindow):
                 (mean_exposure, mean_temperature) = RmFitsUtil.mean_exposure_and_temperature(file_names)
                 RmFitsUtil.create_combined_fits_file(substituted_file_name, min_max_clipped_mean,
                                                      mean_exposure, mean_temperature, filter_name,
-                                                     f"Master flat Min/Max Clipped "
+                                                     f"Master Bias Min/Max Clipped "
                                                      f"(drop {number_dropped_points}) Mean combined")
         else:
-            assert self.ui.combineSigmaRB.isChecked()
+            assert method == Constants.COMBINE_SIGMA_CLIP
             sigma_threshold = float(self.ui.sigmaThreshold.text())
             sigma_clipped_mean = RmFitsUtil.combine_sigma_clip(file_names, sigma_threshold,
                                                                pre_calibrate, pedestal_value, calibration_image)
@@ -374,9 +361,20 @@ class MainWindow(QMainWindow):
                 (mean_exposure, mean_temperature) = RmFitsUtil.mean_exposure_and_temperature(file_names)
                 RmFitsUtil.create_combined_fits_file(substituted_file_name, sigma_clipped_mean,
                                                      mean_exposure, mean_temperature, filter_name,
-                                                     f"Master flat Sigma Clipped "
+                                                     f"Master Bias Sigma Clipped "
                                                      f"(threshold {sigma_threshold}) Mean combined")
 
+    # Determine which combination method is selected in the UI
+    def get_combine_method(self) -> int:
+        if self.ui.combineMeanRB.isChecked():
+            return Constants.COMBINE_MEAN
+        elif self.ui.combineMedianRB.isChecked():
+            return Constants.COMBINE_MEDIAN
+        elif self.ui.combineMinMaxRB.isChecked():
+            return Constants.COMBINE_MINMAX
+        else:
+            assert self.ui.combineSigmaRB.isChecked()
+            return Constants.COMBINE_SIGMA_CLIP
 
     # We're done combining files.  The user may want us to do something with the original input files
     def handle_input_files_disposition(self, descriptors: [FileDescriptor], filter_name: str):
@@ -399,3 +397,4 @@ class MainWindow(QMainWindow):
             return True
         else:
             return num_selected > (2 * int(self.ui.minMaxNumDropped.text()))
+

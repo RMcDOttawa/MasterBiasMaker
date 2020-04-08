@@ -28,4 +28,4 @@ Options
 
 Examples:
 
-MasterFlatMaker -s 2.0 biasfolder/*.fits
+MasterBiasMaker -s 2.0 biasfolder/*.fits

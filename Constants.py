@@ -14,6 +14,12 @@ class Constants:
     INPUT_DISPOSITION_NOTHING = -8357  # Do nothing to the files
     INPUT_DISPOSITION_SUBFOLDER = -8361  # Move to a given named subfolder
 
+    # What kind of calibration preprocessing is applied to images before combining?
+    CALIBRATION_NONE = -9717  # Don't do any precalibration on the image files
+    CALIBRATION_PEDESTAL = -9715  # Subtract a fixed pedestal number from all files
+    CALIBRATION_FIXED_FILE = -9713  # Precalibration file path is permanently stored
+    CALIBRATION_PROMPT = -9711  # Prompt user for precalibration file
+
 
     @classmethod
     def combine_method_string(cls, method: int) -> str:
@@ -22,10 +28,12 @@ class Constants:
         elif method == cls.COMBINE_MEDIAN:
             return "Median"
         elif method == cls.COMBINE_MINMAX:
-            return "Min-Max Clip"
+            return "MinMaxClip"
+        elif method == cls.COMBINE_SIGMA_CLIP:
+            return "SigmaClip"
         else:
-            assert method == cls.COMBINE_SIGMA_CLIP
-            return "Sigma Clip"
+            print(f"combine_method_string({method}): Invalid method")
+            assert False
 
     @classmethod
     def disposition_string(cls, value: int) -> str:

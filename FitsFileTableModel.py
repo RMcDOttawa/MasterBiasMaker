@@ -17,7 +17,7 @@ from FileDescriptor import FileDescriptor
 
 
 class FitsFileTableModel(QAbstractTableModel):
-    headings = ["Name", "Type", "Dimensions", "Binning", "Filter", "Exp.", "Temp."]
+    headings = ["Name", "Type", "Dimensions", "Binning", "Exp.", "Temp."]
 
     def __init__(self, ignore_file_type: bool):
         """Constructor for empty fits file table model"""
@@ -64,10 +64,8 @@ class FitsFileTableModel(QAbstractTableModel):
                 binning = descriptor.get_binning()
                 result = f"{binning} x {binning}"
             elif column_index == 4:
-                result = descriptor.get_filter_name()
-            elif column_index == 5:
                 result = f"{descriptor.get_exposure():.3f}"
-            elif column_index == 6:
+            elif column_index == 5:
                 result = str(descriptor.get_temperature())
             else:
                 result = f"<{row_index},{column_index}>"
@@ -114,13 +112,9 @@ class FitsFileTableModel(QAbstractTableModel):
                                       reverse=reverse_flag)
         elif column_index == 4:
             self._files_list = sorted(self._files_list,
-                                      key=FileDescriptor.get_filter_name,
-                                      reverse=reverse_flag)
-        elif column_index == 5:
-            self._files_list = sorted(self._files_list,
                                       key=FileDescriptor.get_exposure,
                                       reverse=reverse_flag)
-        elif column_index == 6:
+        elif column_index == 5:
             self._files_list = sorted(self._files_list,
                                       key=FileDescriptor.get_temperature,
                                       reverse=reverse_flag)
@@ -137,7 +131,7 @@ class FitsFileTableModel(QAbstractTableModel):
             # We're honouring FITS file type, so we allow selection only of FLAT files
             row_index = index.row()
             descriptor = self._files_list[row_index]
-            selectable_option = Qt.ItemIsSelectable if descriptor.get_type() == FileDescriptor.FILE_TYPE_FLAT else 0
+            selectable_option = Qt.ItemIsSelectable if descriptor.get_type() == FileDescriptor.FILE_TYPE_BIAS else 0
         return selectable_option | Qt.ItemIsEnabled
 
     # Clear all the data from the table
