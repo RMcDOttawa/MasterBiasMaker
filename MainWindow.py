@@ -319,7 +319,7 @@ class MainWindow(QMainWindow):
     # Combine the given files, output to the given output file
     # Use the combination algorithm given by the radio buttons on the main window
     def combine_files(self, input_files: [FileDescriptor], filter_name: str, output_path: str):
-        substituted_file_name = SharedUtils.substitute_date_time_filter_in_string(output_path, filter_name)
+        substituted_file_name = SharedUtils.substitute_date_time_filter_in_string(output_path)
         file_names = [d.get_absolute_path() for d in input_files]
         # Get info about any precalibration that is to be done
         # If precalibration wanted, uses image file unless it's None, then use pedestal
