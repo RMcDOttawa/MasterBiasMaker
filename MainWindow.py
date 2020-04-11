@@ -275,7 +275,6 @@ class MainWindow(QMainWindow):
                     self.combine_files(selected_files, filter_name, output_file)
                     # Optionally do something with the original input files
                     self.handle_input_files_disposition(selected_files, filter_name)
-                    self.ui.filesTable.clearSelection()
                     self.ui.message.setText("Combine completed")
                 else:
                     # User cancelled from the file dialog
@@ -384,9 +383,9 @@ class MainWindow(QMainWindow):
         else:
             assert (self.ui.dispositionSubFolderRB.isChecked())
             # User wants us to move the input files into a sub-folder
-            SharedUtils.dispose_files_to_sub_folder(descriptors, self.ui.subFolderName.text(), filter_name)
-            # Clear the table since those paths are no longer valid
-            self._table_model.clear_table()
+            SharedUtils.dispose_files_to_sub_folder(descriptors, self.ui.subFolderName.text())
+            # Remove the files from the table since those paths are no longer valid
+            self._table_model.remove_files(descriptors)
 
     # Determine if there are enough files selected for the Min-Max algorithm
     # If that algorithm isn't selected, then return True

@@ -139,3 +139,19 @@ class FitsFileTableModel(QAbstractTableModel):
         self.beginResetModel()
         self._files_list = []
         self.endResetModel()
+
+    # Remove the given files from the table (probably because we have moved them
+    # so the file path is no longer valid)
+
+    def remove_files(self, descriptors):
+        descriptor: FileDescriptor
+        for descriptor in descriptors:
+            name_to_remove = descriptor.get_name()
+            # Find occurrence of this (there is only one) and remove that row
+            for row_index in range(len(self._files_list)):
+                if self._files_list[row_index].get_name() == name_to_remove:
+                    model_index = self.createIndex(row_index, 0)
+                    self.beginRemoveRows(model_index.parent(), row_index, row_index)
+                    del self._files_list[row_index]
+                    self.endRemoveRows()
+                    break
