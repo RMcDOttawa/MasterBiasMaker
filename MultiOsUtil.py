@@ -3,9 +3,6 @@
 # with the various native bundle packaging utilities that I can't get working
 import os
 
-from PyQt5.QtCore import QObject
-from PyQt5.QtWidgets import QLabel, QCheckBox, QRadioButton, QLineEdit, QPushButton, QDateEdit, QTimeEdit
-
 
 class MultiOsUtil:
 
@@ -19,4 +16,3 @@ class MultiOsUtil:
         directory_name = os.path.dirname(program_full_path)
         path_to_file = f"{directory_name}/{file_name}"
         return path_to_file
-

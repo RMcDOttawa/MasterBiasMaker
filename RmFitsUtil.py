@@ -294,7 +294,7 @@ class RmFitsUtil:
     # removing all the points at the column's minimum value, and all the points at the column's maximum
     # value.  This can be repeated more than once - the number of repetitions is given.  Then the remaining
     # points in the column are combined with a simple mean.  The idea is that the min/max will remove dead and hot
-    # pixels, so the mean on the rest will not include those artefacts.
+    # pixels, so the mean on the rest will not include those artifacts.
     #
     # Eliminating min and max values in a column, could, in rare circumstances, eliminate *all* the data in the
     # column.  If that happens we reduce the number of dropped points for that column until data remains to mean.
@@ -876,7 +876,7 @@ class RmFitsUtil:
     # Combine given files using "sigma clip"
     #
     # In the following explanation, "column" means all of the points at a given image (x,y) coordinate,
-    # across all the provided files.  Imagine that 20 images are given - then one "columm" would be the 20 values
+    # across all the provided files.  Imagine that 20 images are given - then one "column" would be the 20 values
     # at the (0,0) coordinate in all 20 images, the next column would be the 20 values from the images' (0,1)
     # coordinates, and so on.  So for n x m sized images, there are n*m columns of 20 values each.
     #
@@ -898,7 +898,7 @@ class RmFitsUtil:
     #   For each column:
     #       Calculate mean and population standard deviation (stdev) of all data in column
     #       Calculate Z-score of each datum in column.
-    #           Z-score = abs(dataum - mean)/stddev
+    #           Z-score = abs(datum - mean)/stddev
     #       Reject (mask) any data where Z-Score > given threshold
     #       Calculate mean of remaining data
     #

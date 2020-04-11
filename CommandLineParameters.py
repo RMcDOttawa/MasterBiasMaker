@@ -88,7 +88,6 @@ class CommandLineParameters:
         self._file_names = names
 
     def print_all(self):
-        print(f"pre_calibration_type: {Constants.calibration_string(self._pre_calibration_type)}")
         print(f"combine_method: {Constants.combine_method_string(self._combine_method)}")
         print(f"pedestal: {self._pedestal}")
         print(f"fixed_calibration_file: {self._fixed_calibration_file}")

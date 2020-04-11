@@ -1,5 +1,5 @@
 from PyQt5 import uic
-from PyQt5.QtWidgets import QDialog, QFileDialog
+from PyQt5.QtWidgets import QDialog
 
 from Constants import Constants
 from MultiOsUtil import MultiOsUtil

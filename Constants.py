@@ -20,7 +20,6 @@ class Constants:
     CALIBRATION_FIXED_FILE = -9713  # Precalibration file path is permanently stored
     CALIBRATION_PROMPT = -9711  # Prompt user for precalibration file
 
-
     @classmethod
     def combine_method_string(cls, method: int) -> str:
         if method == cls.COMBINE_MEAN:
@@ -42,4 +41,3 @@ class Constants:
         else:
             assert value == cls.INPUT_DISPOSITION_SUBFOLDER
             return "SubFolder"
-

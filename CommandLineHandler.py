@@ -156,7 +156,7 @@ class CommandLineHandler:
         return SharedUtils.most_common_filter_name(file_descriptors)
 
     #
-    #   Create a combined master bias file usign the given algorithm and write it to the output file
+    #   Create a combined master bias file using the given algorithm and write it to the output file
     #
     def write_combined_files(self,
                              parameters: CommandLineParameters,

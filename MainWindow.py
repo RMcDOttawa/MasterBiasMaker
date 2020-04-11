@@ -274,7 +274,7 @@ class MainWindow(QMainWindow):
                     # Do the combination
                     self.combine_files(selected_files, filter_name, output_file)
                     # Optionally do something with the original input files
-                    self.handle_input_files_disposition(selected_files, filter_name)
+                    self.handle_input_files_disposition(selected_files)
                     self.ui.message.setText("Combine completed")
                 else:
                     # User cancelled from the file dialog
@@ -376,7 +376,7 @@ class MainWindow(QMainWindow):
             return Constants.COMBINE_SIGMA_CLIP
 
     # We're done combining files.  The user may want us to do something with the original input files
-    def handle_input_files_disposition(self, descriptors: [FileDescriptor], filter_name: str):
+    def handle_input_files_disposition(self, descriptors: [FileDescriptor]):
         if self.ui.dispositionNothingRB.isChecked():
             # User doesn't want us to do anything with the input files
             pass
@@ -396,4 +396,3 @@ class MainWindow(QMainWindow):
             return True
         else:
             return num_selected > (2 * int(self.ui.minMaxNumDropped.text()))
-
