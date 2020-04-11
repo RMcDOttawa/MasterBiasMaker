@@ -90,7 +90,7 @@ class Preferences(QSettings):
     # Where to move input files if disposition "subfolder" is chosen
 
     def get_disposition_subfolder_name(self):
-        return self.value(self.DISPOSITION_SUBFOLDER_NAME, defaultValue="originals-%f-%d-%t")
+        return self.value(self.DISPOSITION_SUBFOLDER_NAME, defaultValue="originals-%d-%t")
 
     def set_disposition_subfolder_name(self, value: str):
         self.setValue(self.DISPOSITION_SUBFOLDER_NAME, value)

@@ -12,8 +12,8 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>1040</width>
-    <height>650</height>
+    <width>700</width>
+    <height>400</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -391,7 +391,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="algorithmGroup"/>
   <buttongroup name="dispositionGroup"/>
+  <buttongroup name="algorithmGroup"/>
  </buttongroups>
 </ui>
