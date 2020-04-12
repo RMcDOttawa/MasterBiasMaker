@@ -227,6 +227,7 @@ class MainWindow(QMainWindow):
         combine_enabled = self.all_text_fields_valid()
         selected = self.ui.filesTable.selectionModel().selectedRows()
         sigma_clip_enough_files = (not self.ui.combineSigmaRB.isChecked()) or len(selected) >= 3
+        # todo enable only if all selected files are same binning and dimensions
         self.ui.combineSelectedButton.setEnabled(combine_enabled and len(selected) > 0
                                                  and self.min_max_enough_files(len(selected))
                                                  and sigma_clip_enough_files)
@@ -325,6 +326,8 @@ class MainWindow(QMainWindow):
         pre_calibrate: bool
         pedestal_value: int
         calibration_image: numpy.ndarray
+        assert len(input_files) > 0
+        binning: int = input_files[0].get_binning()
         (pre_calibrate, pedestal_value, calibration_image) = (Constants.CALIBRATION_NONE, 0, None)
         method = self.get_combine_method()
         if method == Constants.COMBINE_MEAN:
@@ -332,14 +335,18 @@ class MainWindow(QMainWindow):
             if mean_data is not None:
                 (mean_exposure, mean_temperature) = RmFitsUtil.mean_exposure_and_temperature(file_names)
                 RmFitsUtil.create_combined_fits_file(substituted_file_name, mean_data,
-                                                     mean_exposure, mean_temperature, filter_name,
+                                                     FileDescriptor.FILE_TYPE_BIAS,
+                                                     "Bias Frame",
+                                                     mean_exposure, mean_temperature, filter_name, binning,
                                                      "Master Bias MEAN combined")
         elif method == Constants.COMBINE_MEDIAN:
             median_data = RmFitsUtil.combine_median(file_names, pre_calibrate, pedestal_value, calibration_image)
             if median_data is not None:
                 (mean_exposure, mean_temperature) = RmFitsUtil.mean_exposure_and_temperature(file_names)
                 RmFitsUtil.create_combined_fits_file(substituted_file_name, median_data,
-                                                     mean_exposure, mean_temperature, filter_name,
+                                                     FileDescriptor.FILE_TYPE_BIAS,
+                                                     "Bias Frame",
+                                                     mean_exposure, mean_temperature, filter_name, binning,
                                                      "Master Bias MEDIAN combined")
         elif method == Constants.COMBINE_MINMAX:
             number_dropped_points = int(self.ui.minMaxNumDropped.text())
@@ -348,18 +355,22 @@ class MainWindow(QMainWindow):
             if min_max_clipped_mean is not None:
                 (mean_exposure, mean_temperature) = RmFitsUtil.mean_exposure_and_temperature(file_names)
                 RmFitsUtil.create_combined_fits_file(substituted_file_name, min_max_clipped_mean,
-                                                     mean_exposure, mean_temperature, filter_name,
+                                                     FileDescriptor.FILE_TYPE_BIAS,
+                                                     "Bias Frame",
+                                                     mean_exposure, mean_temperature, filter_name, binning,
                                                      f"Master Bias Min/Max Clipped "
                                                      f"(drop {number_dropped_points}) Mean combined")
         else:
             assert method == Constants.COMBINE_SIGMA_CLIP
             sigma_threshold = float(self.ui.sigmaThreshold.text())
             sigma_clipped_mean = RmFitsUtil.combine_sigma_clip(file_names, sigma_threshold,
+                                                               FileDescriptor.FILE_TYPE_BIAS,
+                                                               "Bias Frame",
                                                                pre_calibrate, pedestal_value, calibration_image)
             if sigma_clipped_mean is not None:
                 (mean_exposure, mean_temperature) = RmFitsUtil.mean_exposure_and_temperature(file_names)
                 RmFitsUtil.create_combined_fits_file(substituted_file_name, sigma_clipped_mean,
-                                                     mean_exposure, mean_temperature, filter_name,
+                                                     mean_exposure, mean_temperature, filter_name, binning,
                                                      f"Master Bias Sigma Clipped "
                                                      f"(threshold {sigma_threshold}) Mean combined")
 

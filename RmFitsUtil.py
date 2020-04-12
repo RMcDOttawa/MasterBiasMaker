@@ -60,7 +60,10 @@ class RmFitsUtil:
             primary = file[0]
             header = primary.header
             # Image type
-            if 'IMAGETYP' in header:
+            if 'PICTTYPE' in header:
+                # This keyword codes the file type directly
+                result = int(header['PICTTYPE'])
+            elif 'IMAGETYP' in header:
                 type_code = header['IMAGETYP'].upper()
                 if 'BIAS' in type_code:
                     result = FileDescriptor.FILE_TYPE_BIAS
@@ -136,9 +139,12 @@ class RmFitsUtil:
     @classmethod
     def create_combined_fits_file(cls, name: str,
                                   data: ndarray,
+                                  file_type_code: int,
+                                  image_type_string: str,
                                   exposure: float,
                                   temperature: float,
                                   filter_name: str,
+                                  binning: int,
                                   comment: str):
         """Write a new FITS file with the given data and name.
         Create a FITS header in the file by copying the header from a given existing file
@@ -150,6 +156,11 @@ class RmFitsUtil:
         header["COMMENT"] = comment
         header["EXPTIME"] = exposure
         header["CCD-TEMP"] = temperature
+        header["SET-TEMP"] = temperature
+        header["XBINNING"] = binning
+        header["YBINNING"] = binning
+        header["PICTTYPE"] = file_type_code
+        header["IMAGETYP"] = image_type_string
 
         # Create primary HDU
         data_16_bit = data.astype("i2")
