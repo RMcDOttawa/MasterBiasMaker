@@ -364,12 +364,12 @@ class MainWindow(QMainWindow):
             assert method == Constants.COMBINE_SIGMA_CLIP
             sigma_threshold = float(self.ui.sigmaThreshold.text())
             sigma_clipped_mean = RmFitsUtil.combine_sigma_clip(file_names, sigma_threshold,
-                                                               FileDescriptor.FILE_TYPE_BIAS,
-                                                               "Bias Frame",
                                                                pre_calibrate, pedestal_value, calibration_image)
             if sigma_clipped_mean is not None:
                 (mean_exposure, mean_temperature) = RmFitsUtil.mean_exposure_and_temperature(file_names)
                 RmFitsUtil.create_combined_fits_file(substituted_file_name, sigma_clipped_mean,
+                                                     FileDescriptor.FILE_TYPE_BIAS,
+                                                     "Bias Frame",
                                                      mean_exposure, mean_temperature, filter_name, binning,
                                                      f"Master Bias Sigma Clipped "
                                                      f"(threshold {sigma_threshold}) Mean combined")
