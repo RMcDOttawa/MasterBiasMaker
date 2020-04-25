@@ -6,306 +6,882 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1040</width>
-    <height>650</height>
+    <width>883</width>
+    <height>606</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="minimumSize">
    <size>
-    <width>700</width>
-    <height>400</height>
+    <width>858</width>
+    <height>601</height>
    </size>
   </property>
   <property name="windowTitle">
-   <string>Master Bias Frame Maker</string>
+   <string>Master Dark Frame Maker</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout_2">
-    <item row="0" column="0" rowspan="2">
-     <widget class="QTableView" name="filesTable">
-      <property name="editTriggers">
-       <set>QAbstractItemView::NoEditTriggers</set>
-      </property>
-      <property name="tabKeyNavigation">
-       <bool>false</bool>
-      </property>
-      <property name="showDropIndicator" stdset="0">
-       <bool>false</bool>
-      </property>
-      <property name="dragDropOverwriteMode">
-       <bool>false</bool>
-      </property>
-      <property name="selectionBehavior">
-       <enum>QAbstractItemView::SelectRows</enum>
-      </property>
-      <property name="sortingEnabled">
-       <bool>true</bool>
-      </property>
-      <attribute name="horizontalHeaderStretchLastSection">
-       <bool>false</bool>
-      </attribute>
-      <attribute name="verticalHeaderVisible">
-       <bool>false</bool>
-      </attribute>
-      <attribute name="verticalHeaderHighlightSections">
-       <bool>false</bool>
-      </attribute>
-     </widget>
-    </item>
-    <item row="3" column="0" colspan="2">
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
-      <item>
-       <widget class="QPushButton" name="pickFilesButton">
-        <property name="text">
-         <string>Pick Files</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <spacer name="horizontalSpacer_2">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>518</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item>
-       <widget class="QPushButton" name="combineSelectedButton">
-        <property name="text">
-         <string>Combine Selected</string>
-        </property>
-        <property name="autoDefault">
-         <bool>true</bool>
-        </property>
-        <property name="default">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item row="0" column="1">
-     <widget class="QFrame" name="frame">
+   <layout class="QGridLayout" name="gridLayout_8">
+    <item row="0" column="0">
+     <widget class="QTabWidget" name="tabWidget">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
       <property name="minimumSize">
        <size>
-        <width>271</width>
+        <width>0</width>
         <height>0</height>
        </size>
       </property>
-      <property name="maximumSize">
-       <size>
-        <width>900</width>
-        <height>500</height>
-       </size>
+      <property name="toolTip">
+       <string/>
       </property>
-      <property name="frameShape">
-       <enum>QFrame::Box</enum>
+      <property name="currentIndex">
+       <number>0</number>
       </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-      <layout class="QGridLayout" name="gridLayout">
-       <item row="1" column="0">
-        <widget class="QRadioButton" name="combineMeanRB">
-         <property name="toolTip">
-          <string>Simple mean. Best signal-to-noise, but outliers (satellites etc) will show up.</string>
-         </property>
-         <property name="text">
-          <string>Mean</string>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">algorithmGroup</string>
-         </attribute>
-        </widget>
-       </item>
-       <item row="3" column="1" colspan="3">
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>Drop</string>
-         </property>
-        </widget>
-       </item>
-       <item row="8" column="1" colspan="4">
-        <widget class="QLineEdit" name="subFolderName">
-         <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Name for the folder to move the processed files. Optionally this name can contain %d, %t, or %f, which will be replaced by the date, time, and filter name, respectively.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0" colspan="3">
-        <widget class="QLabel" name="label">
-         <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Combination Algorithm&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="4">
-        <widget class="QLineEdit" name="minMaxNumDropped">
-         <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How many min and max values are dropped?  (1 = drop all instances of the max and all instances of the min; 2 = all instances of max and next-to-max and all instances of 2 min values, etc.)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="0" colspan="4">
-        <widget class="QLabel" name="label_5">
-         <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Disposition of Input Files &lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="4">
-        <widget class="QLineEdit" name="sigmaThreshold">
-         <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sigma ratio (how many standard deviations the value is from the mean) beyond which data are dropped.  Try 2.0 then experiment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-        </widget>
-       </item>
-       <item row="8" column="0">
-        <widget class="QRadioButton" name="dispositionSubFolderRB">
-         <property name="toolTip">
-          <string>Move the input files to a sub-folder (in the same directory as the input files) with the given name</string>
-         </property>
-         <property name="text">
-          <string>Move to:</string>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">dispositionGroup</string>
-         </attribute>
-        </widget>
-       </item>
-       <item row="1" column="2" colspan="3">
-        <widget class="QLabel" name="message">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="7" column="0">
-        <widget class="QRadioButton" name="dispositionNothingRB">
-         <property name="toolTip">
-          <string>Leave the input files alone.</string>
-         </property>
-         <property name="text">
-          <string>Do Nothing</string>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">dispositionGroup</string>
-         </attribute>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QRadioButton" name="combineMedianRB">
-         <property name="toolTip">
-          <string>Simple median. Rejects outliers, but signal-to-noise not as good as with Mean.</string>
-         </property>
-         <property name="text">
-          <string>Median</string>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">algorithmGroup</string>
-         </attribute>
-        </widget>
-       </item>
-       <item row="3" column="0">
-        <widget class="QRadioButton" name="combineMinMaxRB">
-         <property name="toolTip">
-          <string>Drop min and max values, then Mean. Works well when outliers are hot or black pixels.</string>
-         </property>
-         <property name="text">
-          <string>Min/Max Clip</string>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">algorithmGroup</string>
-         </attribute>
-        </widget>
-       </item>
-       <item row="4" column="0">
-        <widget class="QRadioButton" name="combineSigmaRB">
-         <property name="toolTip">
-          <string>Drop pixels more than a given sigma ratio from the mean, then mean the rest. Good rejection of anomalous data.</string>
-         </property>
-         <property name="text">
-          <string>Sigma Clip</string>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">algorithmGroup</string>
-         </attribute>
-        </widget>
-       </item>
-       <item row="4" column="1" colspan="3">
-        <widget class="QLabel" name="label_3">
-         <property name="text">
-          <string>Z Limit</string>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="0" colspan="5">
-        <widget class="QCheckBox" name="ignoreFileType">
-         <property name="toolTip">
-          <string>Ignore the FITS metadata on file type, so that apparently mixed-type files can be selected</string>
-         </property>
-         <property name="text">
-          <string>Ignore FITS file type, allow combine</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
+      <widget class="QWidget" name="filesTab">
+       <attribute name="title">
+        <string>File Processing</string>
+       </attribute>
+       <attribute name="toolTip">
+        <string>Selecting files to be processed</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_7">
+        <item row="2" column="5">
+         <widget class="QPushButton" name="combineSelectedButton">
+          <property name="maximumSize">
+           <size>
+            <width>153</width>
+            <height>32</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Combine Selected</string>
+          </property>
+          <property name="autoDefault">
+           <bool>true</bool>
+          </property>
+          <property name="default">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1" colspan="3">
+         <spacer name="horizontalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>518</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="1" column="0">
+         <widget class="QPushButton" name="selectNoneButton">
+          <property name="maximumSize">
+           <size>
+            <width>116</width>
+            <height>32</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Select None</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QPushButton" name="selectAllButton">
+          <property name="maximumSize">
+           <size>
+            <width>99</width>
+            <height>32</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Select All</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0" colspan="4">
+         <widget class="QTableView" name="filesTable">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>100</horstretch>
+            <verstretch>100</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>600</width>
+            <height>401</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>All the files you have picked from the file system.  Only those you select will be processed.  Sort by clickin on column headings.</string>
+          </property>
+          <property name="editTriggers">
+           <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
+          <property name="tabKeyNavigation">
+           <bool>false</bool>
+          </property>
+          <property name="showDropIndicator" stdset="0">
+           <bool>false</bool>
+          </property>
+          <property name="dragDropOverwriteMode">
+           <bool>false</bool>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="sortingEnabled">
+           <bool>true</bool>
+          </property>
+          <attribute name="horizontalHeaderStretchLastSection">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="verticalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="verticalHeaderHighlightSections">
+           <bool>false</bool>
+          </attribute>
+         </widget>
+        </item>
+        <item row="0" column="4" colspan="2">
+         <widget class="QFrame" name="frame">
+          <property name="minimumSize">
+           <size>
+            <width>176</width>
+            <height>403</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>176</width>
+            <height>403</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Settings for this session are summarized here.  Change them by selecting the Options tab above.</string>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_6">
+           <item row="10" column="0">
+            <widget class="QLabel" name="dispositionInfo1">
+             <property name="text">
+              <string>Disposition Text</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="preCalInfo1">
+             <property name="text">
+              <string>precal type</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="0">
+            <widget class="QLabel" name="groupInfo1">
+             <property name="text">
+              <string>Size, Label, Temperature</string>
+             </property>
+            </widget>
+           </item>
+           <item row="9" column="0">
+            <widget class="QLabel" name="label_20">
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Disposition:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="11" column="0">
+            <widget class="QLabel" name="label_21">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;Modify these settings on the Options tab.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="methodInfo1">
+             <property name="text">
+              <string>combo-method</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0">
+            <widget class="QLabel" name="label_16">
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Grouping By:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="12" column="0">
+            <spacer name="verticalSpacer_4">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="methodInfo2">
+             <property name="text">
+              <string>Ignore fits type</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_10">
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Pre-Calibration:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="0">
+            <widget class="QLabel" name="groupInfo2">
+             <property name="text">
+              <string>Ignore message</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_15">
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Combination Method:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="preCalInfo2">
+             <property name="styleSheet">
+              <string notr="true">font: 9pt &quot;Geneva&quot;;</string>
+             </property>
+             <property name="text">
+              <string>precal path</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QPushButton" name="pickFilesButton">
+          <property name="maximumSize">
+           <size>
+            <width>111</width>
+            <height>32</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Pick Files</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2" colspan="2">
+         <widget class="QLabel" name="selectedLabel">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="4" colspan="2">
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="optionsTab">
+       <attribute name="title">
+        <string>Options</string>
+       </attribute>
+       <attribute name="toolTip">
+        <string>Options on how the selected files will be grouped, calibrated, and combined.</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_5">
+        <item row="0" column="0">
+         <widget class="QGroupBox" name="groupBox_2">
+          <property name="minimumSize">
+           <size>
+            <width>331</width>
+            <height>261</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>331</width>
+            <height>291</height>
+           </size>
+          </property>
+          <property name="title">
+           <string>Pre-Combine Bias File Calibration</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout">
+           <item row="0" column="0" colspan="2">
+            <widget class="QRadioButton" name="noPreClalibrationRB">
+             <property name="toolTip">
+              <string>No precalibration</string>
+             </property>
+             <property name="text">
+              <string>No pre-calibration</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">preCalibrationGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item row="1" column="0" colspan="2">
+            <widget class="QRadioButton" name="fixedPedestalRB">
+             <property name="toolTip">
+              <string>Subtract a given fixed pedestal amount from each pixel</string>
+             </property>
+             <property name="text">
+              <string>Pedestal</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">preCalibrationGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item row="1" column="3" colspan="2">
+            <widget class="QLineEdit" name="fixedPedestalAmount"/>
+           </item>
+           <item row="2" column="0" colspan="2">
+            <widget class="QRadioButton" name="autoPreCalibrationRB">
+             <property name="toolTip">
+              <string>Automatically choose a matching Bias file from a directory of Bias files</string>
+             </property>
+             <property name="text">
+              <string>Auto from Directory</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">preCalibrationGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item row="2" column="2" colspan="2">
+            <widget class="QPushButton" name="setAutoDirectory">
+             <property name="text">
+              <string>Set Dir</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="4">
+            <spacer name="horizontalSpacer_3">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>34</width>
+               <height>15</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="3" column="0">
+            <spacer name="horizontalSpacer_7">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeType">
+              <enum>QSizePolicy::Fixed</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>17</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="3" column="1" colspan="3">
+            <widget class="QCheckBox" name="autoRecursive">
+             <property name="toolTip">
+              <string>In &quot;Auto Directory&quot;, include any files in sub-directories too</string>
+             </property>
+             <property name="statusTip">
+              <string/>
+             </property>
+             <property name="text">
+              <string>Include sub-directories</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <spacer name="horizontalSpacer_8">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeType">
+              <enum>QSizePolicy::Fixed</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>17</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="4" column="1" colspan="2">
+            <widget class="QCheckBox" name="autoBiasOnly">
+             <property name="toolTip">
+              <string>In auto directory, only BIAS files will be considered</string>
+             </property>
+             <property name="text">
+              <string>Bias files only</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0" colspan="5">
+            <widget class="QLabel" name="autoDirectoryName">
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:9pt;&quot;&gt;Directory name echoed here&lt;br/&gt;second line&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0" colspan="2">
+            <widget class="QRadioButton" name="fixedPreCalFileRB">
+             <property name="toolTip">
+              <string>Use fixed bias file specified here for precalibration</string>
+             </property>
+             <property name="text">
+              <string>Fixed Bias File:</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">preCalibrationGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item row="6" column="2" colspan="2">
+            <widget class="QPushButton" name="selectPreCalFile">
+             <property name="text">
+              <string>Select File</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="4">
+            <spacer name="horizontalSpacer_4">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>34</width>
+               <height>15</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="7" column="0" colspan="5">
+            <widget class="QLabel" name="precalibrationPathDisplay">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:9pt;&quot;&gt;File name is echoed here&lt;br/&gt;Second line&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QGroupBox" name="groupBox_3">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Ignored" vsizetype="Ignored">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>326</width>
+            <height>261</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>326</width>
+            <height>291</height>
+           </size>
+          </property>
+          <property name="title">
+           <string>Combination Algorithm</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_2">
+           <item row="0" column="0">
+            <widget class="QRadioButton" name="combineMeanRB">
+             <property name="toolTip">
+              <string>Simple mean. Best signal-to-noise, but outliers (satellites etc) will show up.</string>
+             </property>
+             <property name="text">
+              <string>Mean</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="3">
+            <spacer name="horizontalSpacer_5">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>37</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="2" column="2">
+            <widget class="QLineEdit" name="minMaxNumDropped">
+             <property name="maximumSize">
+              <size>
+               <width>41</width>
+               <height>21</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How many min and max values are dropped?  (1 = drop all instances of the max and all instances of the min; 2 = all instances of max and next-to-max and all instances of 2 min values, etc.)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="3">
+            <spacer name="horizontalSpacer_6">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>37</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Drop</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2">
+            <widget class="QLineEdit" name="sigmaThreshold">
+             <property name="maximumSize">
+              <size>
+               <width>41</width>
+               <height>21</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sigma ratio (how many standard deviations the value is from the mean) beyond which data are dropped.  Try 2.0 then experiment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QRadioButton" name="combineMinMaxRB">
+             <property name="toolTip">
+              <string>Drop min and max values, then Mean. Works well when outliers are hot or black pixels.</string>
+             </property>
+             <property name="text">
+              <string>Min/Max Clip</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>Z Limit</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <spacer name="verticalSpacer">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="1" column="0">
+            <widget class="QRadioButton" name="combineMedianRB">
+             <property name="toolTip">
+              <string>Simple median. Rejects outliers, but signal-to-noise not as good as with Mean.</string>
+             </property>
+             <property name="text">
+              <string>Median</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QRadioButton" name="combineSigmaRB">
+             <property name="toolTip">
+              <string>Drop pixels more than a given sigma ratio from the mean, then mean the rest. Good rejection of anomalous data.</string>
+             </property>
+             <property name="text">
+              <string>Sigma Clip</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0" colspan="3">
+            <widget class="QCheckBox" name="ignoreFileType">
+             <property name="text">
+              <string>Ignore FITS file type, allow combine</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QGroupBox" name="groupBox_4">
+          <property name="minimumSize">
+           <size>
+            <width>333</width>
+            <height>193</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>333</width>
+            <height>193</height>
+           </size>
+          </property>
+          <property name="title">
+           <string>Process Multiple Files at Once, Grouped</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_3">
+           <item row="2" column="2">
+            <widget class="QLabel" name="label_8">
+             <property name="text">
+              <string>%</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QLineEdit" name="minimumGroupSize">
+             <property name="maximumSize">
+              <size>
+               <width>31</width>
+               <height>21</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLineEdit" name="temperatureGroupTolerance">
+             <property name="maximumSize">
+              <size>
+               <width>31</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>Consider temperatures to be the same if the are within this percentage of each other.</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QCheckBox" name="groupByTemperatureCB">
+             <property name="toolTip">
+              <string>Process sets of files having different CCD temperatures</string>
+             </property>
+             <property name="text">
+              <string>Group by Temperature, within:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QCheckBox" name="groupByExposureCB">
+             <property name="toolTip">
+              <string>Process sets of files having different exposure times</string>
+             </property>
+             <property name="text">
+              <string>Group by Exposure, within:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>%</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2">
+            <widget class="QLabel" name="label_9">
+             <property name="text">
+              <string>files</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="exposureGroupTolerance">
+             <property name="maximumSize">
+              <size>
+               <width>31</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>Consider exposure times to be the same if the are within this percentage of each other.</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QCheckBox" name="ignoreSmallGroupsCB">
+             <property name="text">
+              <string>Ignore groups with fewer than:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0" colspan="2">
+            <widget class="QCheckBox" name="groupBySizeCB">
+             <property name="toolTip">
+              <string>Process sets of files having different dimensions or binnings</string>
+             </property>
+             <property name="text">
+              <string>Group by size (dimensions and binning)</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QGroupBox" name="groupBox_5">
+          <property name="minimumSize">
+           <size>
+            <width>326</width>
+            <height>193</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>326</width>
+            <height>193</height>
+           </size>
+          </property>
+          <property name="title">
+           <string>Disposition of Input Files</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_4">
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="subFolderName">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Name for the folder to move the processed files. Optionally this name can contain %d, %t, or %f, which will be replaced by the date, time, and filter name, respectively.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QRadioButton" name="dispositionSubFolderRB">
+             <property name="toolTip">
+              <string>Move the input files to a sub-folder (in the same directory as the input files) with the given name</string>
+             </property>
+             <property name="text">
+              <string>Move to:</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">dispositionGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item row="0" column="0" colspan="2">
+            <widget class="QRadioButton" name="dispositionNothingRB">
+             <property name="toolTip">
+              <string>Leave the input files alone.</string>
+             </property>
+             <property name="text">
+              <string>Do Nothing</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">dispositionGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <spacer name="verticalSpacer_2">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </widget>
-    </item>
-    <item row="2" column="0" colspan="2">
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
-       <widget class="QPushButton" name="selectNoneButton">
-        <property name="text">
-         <string>Select None</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="selectAllButton">
-        <property name="text">
-         <string>Select All</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <spacer name="horizontalSpacer">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>538</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-     </layout>
-    </item>
-    <item row="1" column="1">
-     <spacer name="verticalSpacer">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>20</width>
-        <height>30</height>
-       </size>
-      </property>
-     </spacer>
     </item>
    </layout>
   </widget>
@@ -314,7 +890,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1040</width>
+     <width>883</width>
      <height>22</height>
     </rect>
    </property>
@@ -392,6 +968,6 @@
  <connections/>
  <buttongroups>
   <buttongroup name="dispositionGroup"/>
-  <buttongroup name="algorithmGroup"/>
+  <buttongroup name="preCalibrationGroup"/>
  </buttongroups>
 </ui>

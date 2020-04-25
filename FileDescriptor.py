@@ -64,6 +64,11 @@ class FileDescriptor:
     def get_y_dimension(self) -> int:
         return self._y_size
 
+    # Get the "size key" used for grouping files.
+    # Size key is a string with x and y dimensions and binning joined by a delimiter
+    def get_size_key(self):
+        return f"{self._binning}:{self._x_size}:{self._y_size}"
+
     def set_dimensions(self, x_size: int, y_size: int):
         self._x_size = x_size
         self._y_size = y_size
@@ -85,3 +90,6 @@ class FileDescriptor:
 
     def set_temperature(self, temperature: float):
         self._temperature = temperature
+
+    def __str__(self) -> str:
+        return f"{self.get_name()}: {self._binning} {self._exposure} {self._temperature}"

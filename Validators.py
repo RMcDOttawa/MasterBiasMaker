@@ -41,6 +41,6 @@ class Validators:
         result = False
         if min_length <= len(proposed_name) <= max_length:
             upper = proposed_name.upper()
-            matched = re.fullmatch("[A-Z0-9_\\-\\$\\(\\)]*", upper)
+            matched = re.fullmatch("[A-Z0-9_\\-$()]*", upper)
             result = bool(matched)
         return result

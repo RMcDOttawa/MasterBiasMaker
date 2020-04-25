@@ -16,3 +16,4 @@ class MultiOsUtil:
         directory_name = os.path.dirname(program_full_path)
         path_to_file = f"{directory_name}/{file_name}"
         return path_to_file
+

@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QSettings, QSize
+from PyQt5.QtCore import QSettings, QSize, QPoint
 
 from Constants import Constants
 
@@ -26,8 +26,24 @@ class Preferences(QSettings):
     # Folder name to move input files if DISPOSITION is SUBFOLDER
     DISPOSITION_SUBFOLDER_NAME = "disposition_subfolder_name"
 
-    # Main window size - so last window resizing is remembered
+    # Main window size and position - so last window move or resizing is remembered
     MAIN_WINDOW_SIZE = "main_window_size"
+    MAIN_WINDOW_POSITION = "main_window_position"
+
+    # Console window size
+    CONSOLE_WINDOW_SIZE = "console_window_size"
+    CONSOLE_WINDOW_POSITION = "console_window_position"
+
+    # Are we processing multiple file sets at once using grouping?
+    GROUP_BY_SIZE = "group_by_size"
+    GROUP_BY_TEMPERATURE = "group_by_temperature"
+
+    # How much, as a percentage, can temperatures vary before being considered a different group?
+    TEMPERATURE_GROUP_TOLERANCE = "temperature_group_tolerance"
+
+    # Should we ignore small groups (probably haven't finished collecting them yet)?  How small
+    IGNORE_GROUPS_FEWER_THAN = "ignore_groups_fewer_than"
+    MINIMUM_GROUP_SIZE = "minimum_group_size"
 
     def __init__(self):
         QSettings.__init__(self, "EarwigHavenObservatory.com", "MasterBiasMaker_b")
@@ -68,7 +84,7 @@ class Preferences(QSettings):
     # are rejected, the the remaining points are mean-combined.  Floating point number > 0.
 
     def get_sigma_clip_threshold(self) -> float:
-        result = float(self.value(self.SIGMA_CLIP_THRESHOLD, defaultValue=3.0))
+        result = float(self.value(self.SIGMA_CLIP_THRESHOLD, defaultValue=2.0))
         assert result > 0.0
         return result
 
@@ -102,3 +118,72 @@ class Preferences(QSettings):
 
     def set_main_window_size(self, size: QSize):
         self.setValue(self.MAIN_WINDOW_SIZE, size)
+
+    # Main window position when moved
+
+    def get_main_window_position(self) -> QPoint:
+        return self.value(self.MAIN_WINDOW_POSITION, defaultValue=None)
+
+    def set_main_window_position(self, position: QPoint):
+        self.setValue(self.MAIN_WINDOW_POSITION, position)
+
+    # Console window size when resized
+
+    def get_console_window_size(self) -> QSize:
+        return self.value(self.CONSOLE_WINDOW_SIZE, defaultValue=None)
+
+    def set_console_window_size(self, size: QSize):
+        self.setValue(self.CONSOLE_WINDOW_SIZE, size)
+
+    # Console window position when moved
+
+    def get_console_window_position(self) -> QPoint:
+        return self.value(self.CONSOLE_WINDOW_POSITION, defaultValue=None)
+
+    def set_console_window_position(self, position: QPoint):
+        self.setValue(self.CONSOLE_WINDOW_POSITION, position)
+
+    # Are we processing multiple file sets at once using grouping?
+
+    def get_group_by_size(self) -> bool:
+        return bool(self.value(self.GROUP_BY_SIZE, defaultValue=False))
+
+    def set_group_by_size(self, is_grouped: bool):
+        self.setValue(self.GROUP_BY_SIZE, is_grouped)
+
+    def get_group_by_exposure(self) -> bool:
+        return bool(self.value(self.GROUP_BY_EXPOSURE, defaultValue=False))
+
+    def set_group_by_exposure(self, is_grouped: bool):
+        self.setValue(self.GROUP_BY_EXPOSURE, is_grouped)
+
+    def get_group_by_temperature(self) -> bool:
+        return bool(self.value(self.GROUP_BY_TEMPERATURE, defaultValue=False))
+
+    def set_group_by_temperature(self, is_grouped: bool):
+        self.setValue(self.GROUP_BY_TEMPERATURE, is_grouped)
+
+    # How much, as a percentage, can temperatures vary before being considered a different group?
+
+    def get_temperature_group_tolerance(self) -> float:
+        percentage: float = float(self.value(self.TEMPERATURE_GROUP_TOLERANCE, defaultValue=0.10))
+        assert 0 <= percentage < 1
+        return percentage
+
+    def set_temperature_group_tolerance(self, percentage: float):
+        assert 0 <= percentage < 1
+        self.setValue(self.TEMPERATURE_GROUP_TOLERANCE, percentage)
+
+    # Should we ignore small groups (probably haven't finished collecting them yet)?  How small?
+
+    def get_ignore_groups_fewer_than(self) -> bool:
+        return bool(self.value(self.IGNORE_GROUPS_FEWER_THAN, defaultValue=False))
+
+    def set_ignore_groups_fewer_than(self, ignore: bool):
+        self.setValue(self.IGNORE_GROUPS_FEWER_THAN, ignore)
+
+    def get_minimum_group_size(self) -> int:
+        return int(self.value(self.MINIMUM_GROUP_SIZE, defaultValue=32))
+
+    def set_minimum_group_size(self, value: int):
+        self.setValue(self.MINIMUM_GROUP_SIZE, value)

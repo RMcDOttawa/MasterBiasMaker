@@ -1,10 +1,19 @@
-import numpy
+#
+#   Window controller for the main window
+#   Manages the UI and initiates a combination action if all is well
+#
+
+import os
+
 from PyQt5 import uic
 from PyQt5.QtCore import QObject, QEvent, QModelIndex
+from PyQt5.QtGui import QResizeEvent, QMoveEvent
 from PyQt5.QtWidgets import QMainWindow, QDialog, QHeaderView, QFileDialog, QMessageBox
 
-from CommandLineHandler import CommandLineHandler
+from ConsoleWindow import ConsoleWindow
 from Constants import Constants
+from DataModel import DataModel
+from FileCombiner import FileCombiner
 from FileDescriptor import FileDescriptor
 from FitsFileTableModel import FitsFileTableModel
 from MultiOsUtil import MultiOsUtil
@@ -17,17 +26,19 @@ from Validators import Validators
 
 class MainWindow(QMainWindow):
 
-    def __init__(self, preferences: Preferences):
+    def __init__(self, preferences: Preferences, data_model: DataModel):
         """Initialize MainWindow class"""
         self._preferences = preferences
+        self._data_model = data_model
         QMainWindow.__init__(self)
         self.ui = uic.loadUi(MultiOsUtil.path_for_file_in_program_directory("MainWindow.ui"))
         self._field_validity: {object, bool} = {}
         self._table_model: FitsFileTableModel
+        self._indent_level = 0
 
         # Load algorithm from preferences
 
-        algorithm = preferences.get_master_combine_method()
+        algorithm = data_model.get_master_combine_method()
         if algorithm == Constants.COMBINE_MEAN:
             self.ui.combineMeanRB.setChecked(True)
         elif algorithm == Constants.COMBINE_MEDIAN:
@@ -38,24 +49,36 @@ class MainWindow(QMainWindow):
             assert (algorithm == Constants.COMBINE_SIGMA_CLIP)
             self.ui.combineSigmaRB.setChecked(True)
 
-        self.ui.minMaxNumDropped.setText(str(preferences.get_min_max_number_clipped_per_end()))
-        self.ui.sigmaThreshold.setText(str(preferences.get_sigma_clip_threshold()))
+        self.ui.minMaxNumDropped.setText(str(data_model.get_min_max_number_clipped_per_end()))
+        self.ui.sigmaThreshold.setText(str(data_model.get_sigma_clip_threshold()))
 
         # Load disposition from preferences
 
-        disposition = preferences.get_input_file_disposition()
+        disposition = data_model.get_input_file_disposition()
         if disposition == Constants.INPUT_DISPOSITION_SUBFOLDER:
             self.ui.dispositionSubFolderRB.setChecked(True)
         else:
             assert (disposition == Constants.INPUT_DISPOSITION_NOTHING)
             self.ui.dispositionNothingRB.setChecked(True)
-        self.ui.subFolderName.setText(preferences.get_disposition_subfolder_name())
+        self.ui.subFolderName.setText(data_model.get_disposition_subfolder_name())
+
+        # Grouping boxes and parameters
+
+        self.ui.groupBySizeCB.setChecked(data_model.get_group_by_size())
+        self.ui.groupByTemperatureCB.setChecked(data_model.get_group_by_temperature())
+        self.ui.ignoreSmallGroupsCB.setChecked(data_model.get_ignore_groups_fewer_than())
+
+        self.ui.temperatureGroupTolerance.setText(f"{100 * data_model.get_temperature_group_tolerance():.0f}")
+        self.ui.minimumGroupSize.setText(str(data_model.get_minimum_group_size()))
 
         # Set up the file table
-        self._table_model = FitsFileTableModel(self.ui.ignoreFileType.isChecked())
+        self._table_model = FitsFileTableModel(data_model.get_ignore_file_type())
         self.ui.filesTable.setModel(self._table_model)
         # Columns should resize to best fit their contents
         self.ui.filesTable.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+
+        # Write a summary, in the main tab, of the settings from the options tab (and data model)
+        self.fill_options_readout()
 
         self.connect_responders()
 
@@ -110,6 +133,23 @@ class MainWindow(QMainWindow):
         # Main "combine" button
         self.ui.combineSelectedButton.clicked.connect(self.combine_selected_clicked)
 
+        # Grouping controls
+        self.ui.groupBySizeCB.clicked.connect(self.group_by_size_clicked)
+        self.ui.groupByTemperatureCB.clicked.connect(self.group_by_temperature_clicked)
+        self.ui.ignoreSmallGroupsCB.clicked.connect(self.ignore_small_groups_clicked)
+        self.ui.exposureGroupTolerance.editingFinished.connect(self.exposure_group_tolerance_changed)
+        self.ui.temperatureGroupTolerance.editingFinished.connect(self.temperature_group_tolerance_changed)
+        self.ui.minimumGroupSize.editingFinished.connect(self.minimum_group_size_changed)
+
+        # Tiny fonts in path display fields
+        tiny_font = self.ui.precalibrationPathDisplay.font()
+        tiny_font.setPointSize(10)
+        self.ui.precalibrationPathDisplay.setFont(tiny_font)
+        self.ui.autoDirectoryName.setFont(tiny_font)
+
+        # Detect changes to the tab view
+        self.ui.tabWidget.currentChanged.connect(self.tab_changed)
+
     # Certain initialization must be done after "__init__" is finished.
     def set_up_ui(self):
         """Perform initialization that requires class init to be finished"""
@@ -120,36 +160,116 @@ class MainWindow(QMainWindow):
 
     def eventFilter(self, triggering_object: QObject, event: QEvent) -> bool:
         """Event filter, looking for window resize events so we can remember the new size"""
-        if event.type() == QEvent.Resize:
+        if isinstance(event, QResizeEvent):
             window_size = event.size()
             self._preferences.set_main_window_size(window_size)
+        elif isinstance(event, QMoveEvent):
+            new_position = event.pos()
+            self._preferences.set_main_window_position(new_position)
         return False  # Didn't handle event
 
     # "Ignore file type" button clicked.  Tell the data model the new value.
     def ignore_file_type_clicked(self):
         """Respond to clicking 'ignore file type' button"""
-        self._table_model.set_ignore_file_type(self.ui.ignoreFileType.isChecked())
+        self._data_model.set_ignore_file_type(self.ui.ignoreFileType.isChecked())
+        self._table_model.set_ignore_file_type(self._data_model.get_ignore_file_type())
 
     # Select-all button has been clicked
 
     def select_all_clicked(self):
         """Select all the rows in the files table"""
         self.ui.filesTable.selectAll()
+        self.enable_buttons()
+        self.enable_fields()
 
     # Select-None button has been clicked
 
     def select_none_clicked(self):
         """Clear the table selection, leaving no rows selected"""
         self.ui.filesTable.clearSelection()
+        self.enable_buttons()
+        self.enable_fields()
 
     def algorithm_button_clicked(self):
         """ One of the algorithm buttons is clicked.  Change what fields are enabled"""
+        algorithm: int
+        if self.ui.combineMeanRB.isChecked():
+            algorithm = Constants.COMBINE_MEAN
+        elif self.ui.combineMedianRB.isChecked():
+            algorithm = Constants.COMBINE_MEDIAN
+        elif self.ui.combineMinMaxRB.isChecked():
+            algorithm = Constants.COMBINE_MINMAX
+        else:
+            assert self.ui.combineSigmaRB.isChecked()
+            algorithm = Constants.COMBINE_SIGMA_CLIP
+        self._data_model.set_master_combine_method(algorithm)
+        self.enable_fields()
+        self.enable_buttons()
+
+    def group_by_size_clicked(self):
+        self._data_model.set_group_by_size(self.ui.groupBySizeCB.isChecked())
+        self.enable_fields()
+        self.enable_buttons()
+
+    def group_by_exposure_clicked(self):
+        self._data_model.set_group_by_exposure(self.ui.groupByExposureCB.isChecked())
+        self.enable_fields()
+        self.enable_buttons()
+
+    def group_by_temperature_clicked(self):
+        self._data_model.set_group_by_temperature(self.ui.groupByTemperatureCB.isChecked())
+        self.enable_fields()
+        self.enable_buttons()
+
+    def ignore_small_groups_clicked(self):
+        self._data_model.set_ignore_groups_fewer_than(self.ui.ignoreSmallGroupsCB.isChecked())
+        self.enable_fields()
+        self.enable_buttons()
+
+    def auto_recursive_clicked(self):
+        self._data_model.set_auto_directory_recursive(self.ui.autoRecursive.isChecked())
+        self.enable_fields()
+        self.enable_buttons()
+
+    def auto_bias_only_clicked(self):
+        self._data_model.set_auto_directory_bias_only(self.ui.autoBiasOnly.isChecked())
         self.enable_fields()
         self.enable_buttons()
 
     def disposition_button_clicked(self):
         """ One of the disposition buttons is clicked.  Change what fields are enabled"""
+        disposition: int
+        if self.ui.dispositionNothingRB.isChecked():
+            disposition = Constants.INPUT_DISPOSITION_NOTHING
+        else:
+            assert(self.ui.dispositionSubFolderRB.isChecked())
+            disposition = Constants.INPUT_DISPOSITION_SUBFOLDER
+        self._data_model.set_input_file_disposition(disposition)
         self.enable_fields()
+        self.enable_buttons()
+
+    def pedestal_amount_changed(self):
+        """the field giving the fixed calibration pedestal amount has been changed.
+        Validate it (integer > 0) and store if valid"""
+        proposed_new_number: str = self.ui.fixedPedestalAmount.text()
+        new_number = Validators.valid_int_in_range(proposed_new_number, 0, 32767)
+        valid = new_number is not None
+        if valid:
+            self._data_model.set_precalibration_pedestal(new_number)
+        SharedUtils.background_validity_color(self.ui.fixedPedestalAmount, valid)
+        self._field_validity[self.ui.fixedPedestalAmount] = valid
+        self.enable_buttons()
+
+    def minimum_group_size_changed(self):
+        """the field giving the minimum group size to recognize has been changed.
+        Validate it (integer > 1) and store if valid"""
+        proposed_new_number: str = self.ui.minimumGroupSize.text()
+        new_number = Validators.valid_int_in_range(proposed_new_number, 1, 32767)
+        valid = new_number is not None
+        if valid:
+            self._data_model.set_minimum_group_size(new_number)
+        SharedUtils.background_validity_color(self.ui.minimumGroupSize, valid)
+        self._field_validity[self.ui.minimumGroupSize] = valid
         self.enable_buttons()
 
     def min_max_drop_changed(self):
@@ -158,6 +278,8 @@ class MainWindow(QMainWindow):
         proposed_new_number: str = self.ui.minMaxNumDropped.text()
         new_number = Validators.valid_int_in_range(proposed_new_number, 0, 256)
         valid = new_number is not None
+        if valid:
+            self._data_model.set_min_max_number_clipped_per_end(new_number)
         SharedUtils.background_validity_color(self.ui.minMaxNumDropped, valid)
         self._field_validity[self.ui.minMaxNumDropped] = valid
         self.enable_buttons()
@@ -168,6 +290,8 @@ class MainWindow(QMainWindow):
         proposed_new_number: str = self.ui.sigmaThreshold.text()
         new_number = Validators.valid_float_in_range(proposed_new_number, 0.01, 100.0)
         valid = new_number is not None
+        if valid:
+            self._data_model.set_sigma_clip_threshold(new_number)
         SharedUtils.background_validity_color(self.ui.sigmaThreshold, valid)
         self._field_validity[self.ui.sigmaThreshold] = valid
         self.enable_buttons()
@@ -178,19 +302,46 @@ class MainWindow(QMainWindow):
         proposed_new_name: str = self.ui.subFolderName.text()
         # valid = Validators.valid_file_name(proposed_new_name, 1, 31)
         valid = SharedUtils.validate_folder_name(proposed_new_name)
+        if valid:
+            self._data_model.set_disposition_subfolder_name(proposed_new_name)
         SharedUtils.background_validity_color(self.ui.subFolderName, valid)
         self._field_validity[self.ui.subFolderName] = valid
         self.enable_buttons()
+
+    def exposure_group_tolerance_changed(self):
+        """User has entered value in exposure group tolerance field.  Validate and save"""
+        proposed_new_number: str = self.ui.exposureGroupTolerance.text()
+        new_number = Validators.valid_float_in_range(proposed_new_number, 0.0, 99.999)
+        valid = new_number is not None
+        if valid:
+            self._data_model.set_exposure_group_tolerance(new_number / 100.0)
+        SharedUtils.background_validity_color(self.ui.exposureGroupTolerance, valid)
+        self._field_validity[self.ui.exposureGroupTolerance] = valid
+
+    def temperature_group_tolerance_changed(self):
+        """User has entered value in temperature group tolerance field.  Validate and save"""
+        proposed_new_number: str = self.ui.temperatureGroupTolerance.text()
+        new_number = Validators.valid_float_in_range(proposed_new_number, 0.0, 99.999)
+        valid = new_number is not None
+        if valid:
+            self._data_model.set_temperature_group_tolerance(new_number / 100.0)
+        SharedUtils.background_validity_color(self.ui.temperatureGroupTolerance, valid)
+        self._field_validity[self.ui.temperatureGroupTolerance] = valid
 
     def enable_fields(self):
         """Enable text fields depending on state of various radio buttons"""
 
         # Enable Algorithm fields depending on which algorithm is selected
-        self.ui.minMaxNumDropped.setEnabled(self.ui.combineMinMaxRB.isChecked())
-        self.ui.sigmaThreshold.setEnabled(self.ui.combineSigmaRB.isChecked())
+        combination_type = self._data_model.get_master_combine_method()
+        self.ui.minMaxNumDropped.setEnabled(combination_type == Constants.COMBINE_MINMAX)
+        self.ui.sigmaThreshold.setEnabled(combination_type == Constants.COMBINE_SIGMA_CLIP)
 
         # Enable Disposition fields depending on which disposition is selected
-        self.ui.subFolderName.setEnabled(self.ui.dispositionSubFolderRB.isChecked())
+        self.ui.subFolderName.setEnabled(self._data_model.get_input_file_disposition()
+                                         == Constants.INPUT_DISPOSITION_SUBFOLDER)
+
+        # Grouping parameters go with their corresponding checkbox
+        self.ui.temperatureGroupTolerance.setEnabled(self._data_model.get_group_by_temperature())
 
     # Open a file dialog to pick files to be processed
 
@@ -205,17 +356,40 @@ class MainWindow(QMainWindow):
             # User clicked "cancel"
             pass
         else:
-            file_descriptions = self.make_file_descriptions(file_names)
-            self._table_model.set_file_descriptors(file_descriptions)
+            try:
+                file_descriptions = RmFitsUtil.make_file_descriptions(file_names)
+                self._table_model.set_file_descriptors(file_descriptions)
+            except FileNotFoundError as exception:
+                self.error_dialog("File Not Found", f"File \"{exception.filename}\" was not found or not readable")
         self.enable_buttons()
+
+    def error_dialog(self, brief_message: str, long_message: str, detailed_text: str = ""):
+        dialog = QMessageBox()
+        dialog.setText(brief_message)
+        if len(long_message) > 0:
+            if not long_message.endswith("."):
+                long_message += "."
+        dialog.setInformativeText(long_message)
+        if len(detailed_text) > 0:
+            dialog.setDetailedText(detailed_text)
+        dialog.setIcon(QMessageBox.Critical)
+        dialog.setStandardButtons(QMessageBox.Ok)
+        dialog.setDefaultButton(QMessageBox.Ok)
+        dialog.exec_()
 
     def table_selection_changed(self):
         """Rows selected in the file table have changed; check for button enablement"""
+        selected = self.ui.filesTable.selectionModel().selectedRows()
+        row_or_rows = "row" if len(selected) == 1 else "rows"
+        self.ui.selectedLabel.setText(f"{len(selected)} {row_or_rows} selected")
         self.enable_buttons()
+        self.enable_fields()
 
     def enable_buttons(self):
         """Enable buttons on the main window depending on validity and settings
         of other controls"""
+
+        self.ui.minimumGroupSize.setEnabled(self._data_model.get_ignore_groups_fewer_than())
 
         # "combineSelectedButton" is enabled only if
         #   - No text fields are in error state
@@ -223,14 +397,35 @@ class MainWindow(QMainWindow):
         #   - If Min/Max algorithm selected with count "n", > 2n files selected
         #   - If sigma-clip algorithm selected, >= 3 files selected
         #   - If fixed precalibration file option selected, path must exist
+        #   - If precalibration auto-directory is selected, directory must exist
+        #   - All files must be same dimensions and binning (unless grouping by size)
 
-        combine_enabled = self.all_text_fields_valid()
-        selected = self.ui.filesTable.selectionModel().selectedRows()
-        sigma_clip_enough_files = (not self.ui.combineSigmaRB.isChecked()) or len(selected) >= 3
-        # todo enable only if all selected files are same binning and dimensions
-        self.ui.combineSelectedButton.setEnabled(combine_enabled and len(selected) > 0
-                                                 and self.min_max_enough_files(len(selected))
-                                                 and sigma_clip_enough_files)
+        # We'll say why it's disabled in the tool tip
+
+        tool_tip_text: str = "Combined the selected files into a master bias"
+
+        combination_type = self._data_model.get_master_combine_method()
+
+        dimensions_ok = True
+
+        text_fields_valid = self.all_text_fields_valid()
+        if not text_fields_valid:
+            tool_tip_text = "Disabled because of invalid text fields (shown in red)"
+
+        selected_row_indices = self.ui.filesTable.selectionModel().selectedRows()
+        if len(selected_row_indices) == 0:
+            tool_tip_text = "Disabled because more than one file needs to be selected"
+
+        sigma_clip_enough_files = (combination_type != Constants.COMBINE_SIGMA_CLIP) or len(selected_row_indices) >= 3
+        if not sigma_clip_enough_files:
+            tool_tip_text = "Disabled because not enough files selected for sigma-clip method"
+
+        self.ui.combineSelectedButton.setEnabled(text_fields_valid
+                                                 and len(selected_row_indices) > 1
+                                                 and self.min_max_enough_files(len(selected_row_indices))
+                                                 and sigma_clip_enough_files
+                                                 and dimensions_ok)
+        self.ui.combineSelectedButton.setToolTip(tool_tip_text)
 
         # Enable select all and none only if rows in table
         any_rows = self._table_model.rowCount(QModelIndex()) > 0
@@ -247,56 +442,57 @@ class MainWindow(QMainWindow):
         """Return whether all text fields are valid.  (In fact, returns that
         no text fields are invalid - not necessarily the same, since it is possible that
         a text field has not been tested.)"""
-        all_fields_good = all(val for val in self._field_validity.values())
+        all_fields_good = all(valid for valid in self._field_validity.values())
         return all_fields_good
 
-    def make_file_descriptions(self, file_names: [str]) -> [FileDescriptor]:
-        result: [FileDescriptor] = []
-        for absolute_path in file_names:
-            descriptor = RmFitsUtil.make_file_descriptor(absolute_path)
-            result.append(descriptor)
-        return result
-
+    #
+    #   The user has clicked "Combine", which is the "go ahead and do the work" button.
+    #   The actual work is done as a thread hanging under a console window.  So all we do here
+    #   is create and run the console window.
+    #
     def combine_selected_clicked(self):
-        # Get the list of selected files
-        selected_files: [FileDescriptor] = self.get_selected_file_descriptors()
-        assert len(selected_files) > 0  # Or else the button would have been disabled
-        # Confirm that these are all bias frames, and can be combined (same binning and dimensions)
-        if RmFitsUtil.all_compatible_sizes(selected_files):
-            if self.ui.ignoreFileType.isChecked() \
-                    or RmFitsUtil.all_of_type(selected_files, FileDescriptor.FILE_TYPE_BIAS):
-                # Get output file location
-                suggested_output_path = CommandLineHandler.create_output_path(selected_files[0],
-                                                                              self.get_combine_method())
-                output_file = self.get_output_file(suggested_output_path)
-                if output_file is not None:
-                    # Get (most common) filter name in the set
-                    filter_name = SharedUtils.most_common_filter_name(selected_files)
-                    # Do the combination
-                    self.combine_files(selected_files, filter_name, output_file)
-                    # Optionally do something with the original input files
-                    self.handle_input_files_disposition(selected_files)
-                    self.ui.message.setText("Combine completed")
-                else:
-                    # User cancelled from the file dialog
-                    pass
-            else:
-                not_bias_error = QMessageBox()
-                not_bias_error.setText("The selected files are not all Bias Frames")
-                not_bias_error.setInformativeText("If you know the files are bias frames, they may not have proper FITS"
-                                                   + " data internally. Check the \"Ignore FITS file type\" box"
-                                                   + " to proceed anyway.")
-                not_bias_error.setStandardButtons(QMessageBox.Ok)
-                not_bias_error.setDefaultButton(QMessageBox.Ok)
-                _ = not_bias_error.exec_()
+        if self.commit_fields_continue():
+            # Get the list of selected files
+            selected_files: [FileDescriptor] = self.get_selected_file_descriptors()
+            assert len(selected_files) > 0  # Or else the button would have been disabled
+
+            # If we're doing groups, get the output directory;  If we're doing a single
+            # output file, get the path
+            output_path = self.get_appropriate_output_path(selected_files[0])
+            if output_path is not None:
+                # Open console window, which will create and run the worker thread
+                console_window: ConsoleWindow = ConsoleWindow(self._preferences, self._data_model,
+                                                              selected_files, output_path, self.remove_from_ui)
+                console_window.set_up_ui()
+                console_window.ui.exec_()
+                # We get here when the worker task has finished or been cancelled, and the console window closed.
+
         else:
-            not_compatible = QMessageBox()
-            not_compatible.setText("The selected files can't be combined.")
-            not_compatible.setInformativeText("To be combined into a master file, the files must have identical"
-                                              + " X and Y dimensions, and identical Binning values.")
-            not_compatible.setStandardButtons(QMessageBox.Ok)
-            not_compatible.setDefaultButton(QMessageBox.Ok)
-            _ = not_compatible.exec_()
+            # Something in the input field commit was invalid; if they had hit return
+            # the Combine button would have been disabled and we would never have come here.
+            # So we'll exit now to encourage them to fix the error.
+            pass
+
+    # Run the "editing finished" methods on all the inputs in case they have typed
+    # something but not hit tab or return to commit it - they will expect what they
+    # see to be what gets processed.  Then re-check if the Commit button is still enabled.
+
+    def commit_fields_continue(self) -> bool:
+        self.exposure_group_tolerance_changed()
+        self.min_max_drop_changed()
+        self.minimum_group_size_changed()
+        self.pedestal_amount_changed()
+        self.sigma_threshold_changed()
+        self.sub_folder_name_changed()
+        self.temperature_group_tolerance_changed()
+        self.enable_buttons()
+        return self.ui.combineSelectedButton.isEnabled()
+
+    def get_group_output_directory(self) -> str:
+        dialog = QFileDialog()
+        dialog.setFileMode(QFileDialog.DirectoryOnly)
+        (file_name, _) = dialog.getSaveFileName(parent=None, caption="Output Directory")
+        return None if len(file_name.strip()) == 0 else file_name
 
     # Get the file descriptors corresponding to the selected table rows
     def get_selected_file_descriptors(self) -> [FileDescriptor]:
@@ -316,94 +512,71 @@ class MainWindow(QMainWindow):
                                                 filter="FITS files (*.FIT)")
         return None if len(file_name.strip()) == 0 else file_name
 
-    # Combine the given files, output to the given output file
-    # Use the combination algorithm given by the radio buttons on the main window
-    def combine_files(self, input_files: [FileDescriptor], filter_name: str, output_path: str):
-        substituted_file_name = SharedUtils.substitute_date_time_filter_in_string(output_path)
-        file_names = [d.get_absolute_path() for d in input_files]
-        # Get info about any precalibration that is to be done
-        # If precalibration wanted, uses image file unless it's None, then use pedestal
-        pre_calibrate: bool
-        pedestal_value: int
-        calibration_image: numpy.ndarray
-        assert len(input_files) > 0
-        binning: int = input_files[0].get_binning()
-        (pre_calibrate, pedestal_value, calibration_image) = (Constants.CALIBRATION_NONE, 0, None)
-        method = self.get_combine_method()
-        if method == Constants.COMBINE_MEAN:
-            mean_data = RmFitsUtil.combine_mean(file_names, pre_calibrate, pedestal_value, calibration_image)
-            if mean_data is not None:
-                (mean_exposure, mean_temperature) = RmFitsUtil.mean_exposure_and_temperature(file_names)
-                RmFitsUtil.create_combined_fits_file(substituted_file_name, mean_data,
-                                                     FileDescriptor.FILE_TYPE_BIAS,
-                                                     "Bias Frame",
-                                                     mean_exposure, mean_temperature, filter_name, binning,
-                                                     "Master Bias MEAN combined")
-        elif method == Constants.COMBINE_MEDIAN:
-            median_data = RmFitsUtil.combine_median(file_names, pre_calibrate, pedestal_value, calibration_image)
-            if median_data is not None:
-                (mean_exposure, mean_temperature) = RmFitsUtil.mean_exposure_and_temperature(file_names)
-                RmFitsUtil.create_combined_fits_file(substituted_file_name, median_data,
-                                                     FileDescriptor.FILE_TYPE_BIAS,
-                                                     "Bias Frame",
-                                                     mean_exposure, mean_temperature, filter_name, binning,
-                                                     "Master Bias MEDIAN combined")
-        elif method == Constants.COMBINE_MINMAX:
-            number_dropped_points = int(self.ui.minMaxNumDropped.text())
-            min_max_clipped_mean = RmFitsUtil.combine_min_max_clip(file_names, number_dropped_points,
-                                                                   pre_calibrate, pedestal_value, calibration_image)
-            if min_max_clipped_mean is not None:
-                (mean_exposure, mean_temperature) = RmFitsUtil.mean_exposure_and_temperature(file_names)
-                RmFitsUtil.create_combined_fits_file(substituted_file_name, min_max_clipped_mean,
-                                                     FileDescriptor.FILE_TYPE_BIAS,
-                                                     "Bias Frame",
-                                                     mean_exposure, mean_temperature, filter_name, binning,
-                                                     f"Master Bias Min/Max Clipped "
-                                                     f"(drop {number_dropped_points}) Mean combined")
-        else:
-            assert method == Constants.COMBINE_SIGMA_CLIP
-            sigma_threshold = float(self.ui.sigmaThreshold.text())
-            sigma_clipped_mean = RmFitsUtil.combine_sigma_clip(file_names, sigma_threshold,
-                                                               pre_calibrate, pedestal_value, calibration_image)
-            if sigma_clipped_mean is not None:
-                (mean_exposure, mean_temperature) = RmFitsUtil.mean_exposure_and_temperature(file_names)
-                RmFitsUtil.create_combined_fits_file(substituted_file_name, sigma_clipped_mean,
-                                                     FileDescriptor.FILE_TYPE_BIAS,
-                                                     "Bias Frame",
-                                                     mean_exposure, mean_temperature, filter_name, binning,
-                                                     f"Master Bias Sigma Clipped "
-                                                     f"(threshold {sigma_threshold}) Mean combined")
-
-    # Determine which combination method is selected in the UI
-    def get_combine_method(self) -> int:
-        if self.ui.combineMeanRB.isChecked():
-            return Constants.COMBINE_MEAN
-        elif self.ui.combineMedianRB.isChecked():
-            return Constants.COMBINE_MEDIAN
-        elif self.ui.combineMinMaxRB.isChecked():
-            return Constants.COMBINE_MINMAX
-        else:
-            assert self.ui.combineSigmaRB.isChecked()
-            return Constants.COMBINE_SIGMA_CLIP
-
-    # We're done combining files.  The user may want us to do something with the original input files
-    def handle_input_files_disposition(self, descriptors: [FileDescriptor]):
-        if self.ui.dispositionNothingRB.isChecked():
-            # User doesn't want us to do anything with the input files
-            pass
-        else:
-            assert (self.ui.dispositionSubFolderRB.isChecked())
-            # User wants us to move the input files into a sub-folder
-            SharedUtils.dispose_files_to_sub_folder(descriptors, self.ui.subFolderName.text())
-            # Remove the files from the table since those paths are no longer valid
-            self._table_model.remove_files(descriptors)
-
     # Determine if there are enough files selected for the Min-Max algorithm
     # If that algorithm isn't selected, then return True
     # Otherwise there should be more files selected than 2*n, where n is the
     # min-max clipping value
     def min_max_enough_files(self, num_selected: int) -> bool:
-        if not self.ui.combineMinMaxRB.isChecked():
-            return True
+        return True if self._data_model.get_master_combine_method() != Constants.COMBINE_MINMAX \
+            else num_selected > (2 * self._data_model.get_min_max_number_clipped_per_end())
+
+    #
+    #   Get output path.  This is the directory to receive multiple files if we are group processing,
+    #   or the full path of a single file if not
+    #
+
+    def get_appropriate_output_path(self, sample_file: FileDescriptor):
+        if self._data_model.get_group_by_exposure() \
+                or self._data_model.get_group_by_size() \
+                or self._data_model.get_group_by_temperature():
+            return self.get_group_output_directory()
         else:
-            return num_selected > (2 * int(self.ui.minMaxNumDropped.text()))
+            return self.get_output_file(SharedUtils.create_output_path(sample_file,
+                                                                       self._data_model.get_master_combine_method()))
+
+    #
+    #   Fill in the text fields in the main pane that summarize the settings
+    #
+    def fill_options_readout(self):
+
+        # Selected combination algorithm
+
+        method = self._data_model.get_master_combine_method()
+        method_string = Constants.combine_method_string(method)
+        if method == Constants.COMBINE_MINMAX:
+            method_string += f": drop {self._data_model.get_min_max_number_clipped_per_end()}"
+        elif method == Constants.COMBINE_SIGMA_CLIP:
+            method_string += f": z = {self._data_model.get_sigma_clip_threshold()}"
+        method_string_2 = "Ignore FITS file type" if self._data_model.get_ignore_file_type() else ""
+        self.ui.methodInfo1.setText(method_string)
+        self.ui.methodInfo2.setText(method_string_2)
+
+        # Grouping
+
+        group_parts = []
+        if self._data_model.get_group_by_size():
+            group_parts.append("Size")
+        if self._data_model.get_group_by_temperature():
+            group_parts.append("Temperature")
+        if self._data_model.get_ignore_groups_fewer_than():
+            ignore = f"Min group size {self._data_model.get_minimum_group_size()}"
+        else:
+            ignore = ""
+        self.ui.groupInfo1.setText("(none)" if len(group_parts) == 0 else ", ".join(group_parts))
+        self.ui.groupInfo2.setText(ignore)
+
+        # File disposition
+
+        if self._data_model.get_input_file_disposition() == Constants.INPUT_DISPOSITION_NOTHING:
+            self.ui.dispositionInfo1.setText("(none)")
+        else:
+            self.ui.dispositionInfo1.setText(self._data_model.get_disposition_subfolder_name())
+
+    #
+    #   The tab view has changed. Re-generate the options summary
+    #
+    def tab_changed(self):
+        self.fill_options_readout()
+
+    def remove_from_ui(self, path_to_remove: str):
+        self._table_model.remove_file_path(path_to_remove)

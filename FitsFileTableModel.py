@@ -120,7 +120,7 @@ class FitsFileTableModel(QAbstractTableModel):
                                       reverse=reverse_flag)
         self.endResetModel()
 
-    # We only allow the selection of files that are known to be FLAT frames.
+    # We only allow the selection of files that are known to be Bias frames.
     # Or, if the "ignore file type" flag is on, then we allow the selection of any files
     def flags(self, index: QModelIndex):
         selectable_option: int
@@ -128,7 +128,7 @@ class FitsFileTableModel(QAbstractTableModel):
             # We're ignoring internal FITS file type, so all rows are selectable
             selectable_option = Qt.ItemIsSelectable
         else:
-            # We're honouring FITS file type, so we allow selection only of FLAT files
+            # We're honouring FITS file type, so we allow selection only of BIAS files
             row_index = index.row()
             descriptor = self._files_list[row_index]
             selectable_option = Qt.ItemIsSelectable if descriptor.get_type() == FileDescriptor.FILE_TYPE_BIAS else 0
@@ -155,3 +155,18 @@ class FitsFileTableModel(QAbstractTableModel):
                     del self._files_list[row_index]
                     self.endRemoveRows()
                     break
+
+    # Find and remove the file descriptor with the given absolute path name
+
+    def remove_file_path(self, path_to_remove):
+        # Get index in the list of this path
+        for row_index, descriptor in enumerate(self._files_list):
+            if descriptor.get_absolute_path() == path_to_remove:
+                # Found it, remove this row from the table model, telling the UI to update
+                model_index = self.createIndex(row_index, 0)
+                self.beginRemoveRows(model_index.parent(), row_index, row_index)
+                del self._files_list[row_index]
+                self.endRemoveRows()
+                break
+
+
