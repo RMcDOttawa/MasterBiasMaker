@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>455</width>
+    <width>456</width>
     <height>440</height>
    </rect>
   </property>
@@ -18,8 +18,8 @@
   </property>
   <property name="maximumSize">
    <size>
-    <width>455</width>
-    <height>440</height>
+    <width>555</width>
+    <height>600</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -37,7 +37,7 @@
      <property name="maximumSize">
       <size>
        <width>428</width>
-       <height>150</height>
+       <height>300</height>
       </size>
      </property>
      <property name="title">
@@ -297,7 +297,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="combineMethodGroup"/>
   <buttongroup name="dispositionGroup"/>
+  <buttongroup name="combineMethodGroup"/>
  </buttongroups>
 </ui>

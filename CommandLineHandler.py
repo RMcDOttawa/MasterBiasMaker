@@ -104,22 +104,12 @@ class CommandLineHandler:
             print(f"   Output path: {args.output}")
             output_path = args.output
 
-        # Grouping   gs   ge <threshold>   gt <threshold>  mg <minimum>
-        #   -   If -ge used, threshold is 0 to 100
+        # Grouping   gs   gt <threshold>  mg <minimum>
         #   -   If -gt used, threshold is 0 to 100
         #   -   If -mg used, group size is > 0
         if args.groupsize:
             print("   Group files by size")
             self._data_model.set_group_by_size(True)
-        if args.groupexposure is not None:
-            self._data_model.set_group_by_exposure(True)
-            tolerance = float(args.groupexposure)
-            if 0 <= tolerance <= 100:
-                print(f"   Group files by exposure with tolerance {tolerance}%")
-                self._data_model.set_exposure_group_tolerance(tolerance / 100.0)
-            else:
-                print("-ge tolerance must be between 0 and 100")
-                valid = False
         if args.grouptemperature is not None:
             self._data_model.set_group_by_temperature(True)
             tolerance = float(args.grouptemperature)
@@ -140,8 +130,7 @@ class CommandLineHandler:
                 valid = False
 
         # If any of the grouping options are in use, then the output directory is mandatory
-        if self._data_model.get_group_by_temperature() or self._data_model.get_group_by_exposure() \
-                or self._data_model.get_group_by_size():
+        if self._data_model.get_group_by_temperature() or self._data_model.get_group_by_size():
             if args.outputdirectory is None:
                 print("If any of the group-by options are used, then the output directory option is mandatory")
                 valid = False
@@ -172,15 +161,14 @@ class CommandLineHandler:
         console = ConsoleSimplePrint()
         console.message("Starting session", 0)
         file_combiner = FileCombiner(self.file_moved_callback)
-        # A "session controller" is necessary, but has an interesting effect only in the GUI version
+        # A "session controller" is necessary, but has an interesting effect only in the GUI version.
         # In our command-line case we'll create it but its state will never change so it does nothing
         dummy_session_controller = SessionController()
 
-        # Do the file combination - two methods depending on whether we are processing by groups
+        # Do the file combination - select method depending on whether we are processing by groups
         try:
             # Are we using grouped processing?
-            if self._data_model.get_group_by_exposure() \
-                    or self._data_model.get_group_by_size() \
+            if self._data_model.get_group_by_size() \
                     or self._data_model.get_group_by_temperature():
                 file_combiner.process_groups(self._data_model, descriptors,
                                              output_directory,
@@ -250,7 +238,7 @@ class CommandLineHandler:
         return file_name
 
     def file_moved_callback(self, file_name_moved: str):
-        print(f"file_moved_callback: {file_name_moved}")
+        # print(f"file_moved_callback: {file_name_moved}")
         pass
         # We ignore the callback telling us a file was moved.  No UI needs to be updated
 

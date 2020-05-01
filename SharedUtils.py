@@ -34,12 +34,6 @@ class SharedUtils:
     # # Generate a file's full path, given the file name, and having the
     # # file reside in the same directory where the running program resides
     #
-    # @classmethod
-    # def path_for_file_in_program_directory(cls, file_name: str) -> str:
-    #     program_full_path = os.path.realpath(__file__)
-    #     directory_name = os.path.dirname(program_full_path)
-    #     path_to_file = f"{directory_name}/{file_name}"
-    #     return path_to_file
 
     @classmethod
     def background_validity_color(cls, field: QWidget, is_valid: bool):
@@ -86,16 +80,6 @@ class SharedUtils:
     # special markers in the folder name).  If the folder exists, just use it.  If it doesn't
     # exist, create it.
     #
-    # @classmethod
-    # def dispose_files_to_sub_folder(cls, descriptors: [FileDescriptor], sub_folder_name: str):
-    #
-    #     # Get folder name with special values substituted
-    #     subfolder_located_directory = cls.make_name_a_subfolder(descriptors[0], sub_folder_name)
-    #
-    #     # Create the folder if it doesn't already exist (and make sure we're not clobbering a file)
-    #     if cls.ensure_directory_exists(subfolder_located_directory):
-    #         # Move the files to that folder
-    #         cls.move_files_to_sub_folder(descriptors, subfolder_located_directory)
 
     # Above method to do all files in a list is deprecated.  Instead we do a single file and
     # return a "success" indicator

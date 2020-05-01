@@ -2,9 +2,7 @@
 #   Window controller for the main window
 #   Manages the UI and initiates a combination action if all is well
 #
-
-import os
-
+import PyQt5
 from PyQt5 import uic
 from PyQt5.QtCore import QObject, QEvent, QModelIndex
 from PyQt5.QtGui import QResizeEvent, QMoveEvent
@@ -72,7 +70,7 @@ class MainWindow(QMainWindow):
         self.ui.minimumGroupSize.setText(str(data_model.get_minimum_group_size()))
 
         # Set up the file table
-        self._table_model = FitsFileTableModel(data_model.get_ignore_file_type())
+        self._table_model = FitsFileTableModel(self.ui.filesTable, data_model.get_ignore_file_type())
         self.ui.filesTable.setModel(self._table_model)
         # Columns should resize to best fit their contents
         self.ui.filesTable.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
@@ -137,15 +135,8 @@ class MainWindow(QMainWindow):
         self.ui.groupBySizeCB.clicked.connect(self.group_by_size_clicked)
         self.ui.groupByTemperatureCB.clicked.connect(self.group_by_temperature_clicked)
         self.ui.ignoreSmallGroupsCB.clicked.connect(self.ignore_small_groups_clicked)
-        self.ui.exposureGroupTolerance.editingFinished.connect(self.exposure_group_tolerance_changed)
         self.ui.temperatureGroupTolerance.editingFinished.connect(self.temperature_group_tolerance_changed)
         self.ui.minimumGroupSize.editingFinished.connect(self.minimum_group_size_changed)
-
-        # Tiny fonts in path display fields
-        tiny_font = self.ui.precalibrationPathDisplay.font()
-        tiny_font.setPointSize(10)
-        self.ui.precalibrationPathDisplay.setFont(tiny_font)
-        self.ui.autoDirectoryName.setFont(tiny_font)
 
         # Detect changes to the tab view
         self.ui.tabWidget.currentChanged.connect(self.tab_changed)
@@ -211,11 +202,6 @@ class MainWindow(QMainWindow):
         self.enable_fields()
         self.enable_buttons()
 
-    def group_by_exposure_clicked(self):
-        self._data_model.set_group_by_exposure(self.ui.groupByExposureCB.isChecked())
-        self.enable_fields()
-        self.enable_buttons()
-
     def group_by_temperature_clicked(self):
         self._data_model.set_group_by_temperature(self.ui.groupByTemperatureCB.isChecked())
         self.enable_fields()
@@ -223,16 +209,6 @@ class MainWindow(QMainWindow):
 
     def ignore_small_groups_clicked(self):
         self._data_model.set_ignore_groups_fewer_than(self.ui.ignoreSmallGroupsCB.isChecked())
-        self.enable_fields()
-        self.enable_buttons()
-
-    def auto_recursive_clicked(self):
-        self._data_model.set_auto_directory_recursive(self.ui.autoRecursive.isChecked())
-        self.enable_fields()
-        self.enable_buttons()
-
-    def auto_bias_only_clicked(self):
-        self._data_model.set_auto_directory_bias_only(self.ui.autoBiasOnly.isChecked())
         self.enable_fields()
         self.enable_buttons()
 
@@ -246,18 +222,6 @@ class MainWindow(QMainWindow):
             disposition = Constants.INPUT_DISPOSITION_SUBFOLDER
         self._data_model.set_input_file_disposition(disposition)
         self.enable_fields()
-        self.enable_buttons()
-
-    def pedestal_amount_changed(self):
-        """the field giving the fixed calibration pedestal amount has been changed.
-        Validate it (integer > 0) and store if valid"""
-        proposed_new_number: str = self.ui.fixedPedestalAmount.text()
-        new_number = Validators.valid_int_in_range(proposed_new_number, 0, 32767)
-        valid = new_number is not None
-        if valid:
-            self._data_model.set_precalibration_pedestal(new_number)
-        SharedUtils.background_validity_color(self.ui.fixedPedestalAmount, valid)
-        self._field_validity[self.ui.fixedPedestalAmount] = valid
         self.enable_buttons()
 
     def minimum_group_size_changed(self):
@@ -308,16 +272,6 @@ class MainWindow(QMainWindow):
         self._field_validity[self.ui.subFolderName] = valid
         self.enable_buttons()
 
-    def exposure_group_tolerance_changed(self):
-        """User has entered value in exposure group tolerance field.  Validate and save"""
-        proposed_new_number: str = self.ui.exposureGroupTolerance.text()
-        new_number = Validators.valid_float_in_range(proposed_new_number, 0.0, 99.999)
-        valid = new_number is not None
-        if valid:
-            self._data_model.set_exposure_group_tolerance(new_number / 100.0)
-        SharedUtils.background_validity_color(self.ui.exposureGroupTolerance, valid)
-        self._field_validity[self.ui.exposureGroupTolerance] = valid
-
     def temperature_group_tolerance_changed(self):
         """User has entered value in temperature group tolerance field.  Validate and save"""
         proposed_new_number: str = self.ui.temperatureGroupTolerance.text()
@@ -359,6 +313,7 @@ class MainWindow(QMainWindow):
             try:
                 file_descriptions = RmFitsUtil.make_file_descriptions(file_names)
                 self._table_model.set_file_descriptors(file_descriptions)
+                self._table_model.sort(0, PyQt5.QtCore.Qt.AscendingOrder)  # Column 0, ascending order
             except FileNotFoundError as exception:
                 self.error_dialog("File Not Found", f"File \"{exception.filename}\" was not found or not readable")
         self.enable_buttons()
@@ -396,8 +351,6 @@ class MainWindow(QMainWindow):
         #   - At least one row in the file table is selected
         #   - If Min/Max algorithm selected with count "n", > 2n files selected
         #   - If sigma-clip algorithm selected, >= 3 files selected
-        #   - If fixed precalibration file option selected, path must exist
-        #   - If precalibration auto-directory is selected, directory must exist
         #   - All files must be same dimensions and binning (unless grouping by size)
 
         # We'll say why it's disabled in the tool tip
@@ -406,19 +359,23 @@ class MainWindow(QMainWindow):
 
         combination_type = self._data_model.get_master_combine_method()
 
-        dimensions_ok = True
-
         text_fields_valid = self.all_text_fields_valid()
         if not text_fields_valid:
             tool_tip_text = "Disabled because of invalid text fields (shown in red)"
 
         selected_row_indices = self.ui.filesTable.selectionModel().selectedRows()
         if len(selected_row_indices) == 0:
-            tool_tip_text = "Disabled because more than one file needs to be selected"
+            tool_tip_text = "Disabled because no files are selected"
 
         sigma_clip_enough_files = (combination_type != Constants.COMBINE_SIGMA_CLIP) or len(selected_row_indices) >= 3
         if not sigma_clip_enough_files:
             tool_tip_text = "Disabled because not enough files selected for sigma-clip method"
+
+        dimensions_ok = self._data_model.get_group_by_size() \
+                        or FileCombiner.validate_file_dimensions(self.get_selected_file_descriptors())
+        if not dimensions_ok:
+            tool_tip_text = "Disabled because all files" \
+                            " do not have the same dimensions and binning and Group by Size not selected"
 
         self.ui.combineSelectedButton.setEnabled(text_fields_valid
                                                  and len(selected_row_indices) > 1
@@ -478,10 +435,8 @@ class MainWindow(QMainWindow):
     # see to be what gets processed.  Then re-check if the Commit button is still enabled.
 
     def commit_fields_continue(self) -> bool:
-        self.exposure_group_tolerance_changed()
         self.min_max_drop_changed()
         self.minimum_group_size_changed()
-        self.pedestal_amount_changed()
         self.sigma_threshold_changed()
         self.sub_folder_name_changed()
         self.temperature_group_tolerance_changed()
@@ -526,8 +481,7 @@ class MainWindow(QMainWindow):
     #
 
     def get_appropriate_output_path(self, sample_file: FileDescriptor):
-        if self._data_model.get_group_by_exposure() \
-                or self._data_model.get_group_by_size() \
+        if self._data_model.get_group_by_size() \
                 or self._data_model.get_group_by_temperature():
             return self.get_group_output_directory()
         else:
@@ -580,3 +534,4 @@ class MainWindow(QMainWindow):
 
     def remove_from_ui(self, path_to_remove: str):
         self._table_model.remove_file_path(path_to_remove)
+

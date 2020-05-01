@@ -1,5 +1,3 @@
-import os
-
 from PyQt5 import uic
 from PyQt5.QtWidgets import QDialog
 
@@ -80,49 +78,49 @@ class PreferencesWindow(QDialog):
         self.ui.temperatureGroupTolerance.editingFinished.connect(self.temperature_group_tolerance_changed)
         self.ui.minimumGroupSize.editingFinished.connect(self.minimum_group_size_changed)
 
-        self.enableFields()
+        self.enable_fields()
 
     def group_by_size_clicked(self):
         self._preferences.set_group_by_size(self.ui.groupBySizeCB.isChecked())
-        self.enableFields()
+        self.enable_fields()
 
     def group_by_temperature_clicked(self):
         self._preferences.set_group_by_temperature(self.ui.groupByTemperatureCB.isChecked())
-        self.enableFields()
+        self.enable_fields()
 
     def ignore_small_groups_clicked(self):
         self._preferences.set_ignore_groups_fewer_than(self.ui.ignoreSmallGroupsCB.isChecked())
-        self.enableFields()
+        self.enable_fields()
 
     def combine_mean_button_clicked(self):
         """Combine Mean algorithm button clicked. Record preference and enable/disable fields"""
         self._preferences.set_master_combine_method(Constants.COMBINE_MEAN)
-        self.enableFields()
+        self.enable_fields()
 
     def combine_median_button_clicked(self):
         """Combine Median algorithm button clicked. Record preference and enable/disable fields"""
         self._preferences.set_master_combine_method(Constants.COMBINE_MEDIAN)
-        self.enableFields()
+        self.enable_fields()
 
     def combine_minmax_button_clicked(self):
         """Combine Min-Max algorithm button clicked. Record preference and enable/disable fields"""
         self._preferences.set_master_combine_method(Constants.COMBINE_MINMAX)
-        self.enableFields()
+        self.enable_fields()
 
     def combine_sigma_button_clicked(self):
         """Combine Sigma-Clip algorithm button clicked. Record preference and enable/disable fields"""
         self._preferences.set_master_combine_method(Constants.COMBINE_SIGMA_CLIP)
-        self.enableFields()
+        self.enable_fields()
 
     def disposition_nothing_clicked(self):
         """Do nothing to input files radio button selected"""
         self._preferences.set_input_file_disposition(Constants.INPUT_DISPOSITION_NOTHING)
-        self.enableFields()
+        self.enable_fields()
 
     def disposition_sub_folder_clicked(self):
         """Move input files to sub-folder radio button selected"""
         self._preferences.set_input_file_disposition(Constants.INPUT_DISPOSITION_SUBFOLDER)
-        self.enableFields()
+        self.enable_fields()
 
     def temperature_group_tolerance_changed(self):
         """User has entered value in temperature group tolerance field.  Validate and save"""
@@ -172,7 +170,7 @@ class PreferencesWindow(QDialog):
             self._preferences.set_disposition_subfolder_name(proposed_new_name)
         SharedUtils.background_validity_color(self.ui.subFolderName, valid)
 
-    def enableFields(self):
+    def enable_fields(self):
         """Enable and disable window fields depending on button settings"""
         self.ui.minMaxNumDropped.setEnabled(self._preferences.get_master_combine_method() == Constants.COMBINE_MINMAX)
         self.ui.sigmaThreshold.setEnabled(self._preferences.get_master_combine_method() == Constants.COMBINE_SIGMA_CLIP)

@@ -47,8 +47,7 @@ class CombineThreadWorker(QObject):
         # Do actual work
         try:
             # Are we using grouped processing?
-            if self._data_model.get_group_by_exposure() \
-                    or self._data_model.get_group_by_size() \
+            if self._data_model.get_group_by_size() \
                     or self._data_model.get_group_by_temperature():
                 file_combiner.process_groups(self._data_model, self._descriptors,
                                                              self._output_path,

@@ -5,7 +5,6 @@ from itertools import groupby
 from typing import Callable
 
 import MasterMakerExceptions
-from Calibrator import Calibrator
 from Console import Console
 from Constants import Constants
 from DataModel import DataModel
@@ -71,7 +70,6 @@ class FileCombiner:
                        console: Console,
                        session_controller: SessionController):
         console.push_level()
-        exposure_tolerance = data_model.get_exposure_group_tolerance()
         temperature_tolerance = data_model.get_temperature_group_tolerance()
         disposition_folder = data_model.get_disposition_subfolder_name()
         substituted_folder_name = SharedUtils.substitute_date_time_filter_in_string(disposition_folder)
@@ -83,62 +81,46 @@ class FileCombiner:
 
         #  Process size groups, or all sizes if not grouping
         groups_by_size = self.get_groups_by_size(selected_files, data_model.get_group_by_size())
-        group_by_size = data_model.get_group_by_size()
-        group_by_exposure = data_model.get_group_by_exposure()
-        group_by_temperature = data_model.get_group_by_temperature()
+        grouping_by_size = data_model.get_group_by_size()
+        grouping_by_temperature = data_model.get_group_by_temperature()
         for size_group in groups_by_size:
+            console.push_level()
             if session_controller.thread_cancelled():
                 return
-            console.push_level()
             # Message about this group only if this grouping was requested
             if len(size_group) < minimum_group_size:
-                if group_by_size:
+                if grouping_by_size:
                     console.message(f"Ignoring one size group: {len(size_group)} "
                                     f"files sized {size_group[0].get_size_key()}", +1)
             else:
-                if group_by_size:
+                if grouping_by_size:
                     console.message(f"Processing one size group: {len(size_group)} "
                                     f"files sized {size_group[0].get_size_key()}", +1)
-                # Within this size group, process exposure groups, or all exposures if not grouping
-                groups_by_exposure = self.get_groups_by_exposure(size_group,
-                                                                         data_model.get_group_by_exposure(),
-                                                                         exposure_tolerance)
-                for exposure_group in groups_by_exposure:
+                # Within this size group, process temperature groups, or all temperatures if not grouping
+                groups_by_temperature = \
+                    self.get_groups_by_temperature(size_group,
+                                                   data_model.get_group_by_temperature(),
+                                                   temperature_tolerance)
+                for temperature_group in groups_by_temperature:
+                    console.push_level()
                     if session_controller.thread_cancelled():
                         return
-                    console.push_level()
-                    if len(exposure_group) < minimum_group_size:
-                        if group_by_exposure:
-                            console.message(f"Ignoring one exposure group: {len(exposure_group)} "
-                                            f"files exposed {exposure_group[0].get_exposure()}", +1)
+                    (mean_exposure, mean_temperature) = ImageMath.mean_exposure_and_temperature(temperature_group)
+                    if len(temperature_group) < minimum_group_size:
+                        if grouping_by_temperature:
+                            console.message(f"Ignoring one temperature group: {len(temperature_group)} "
+                                            f"files at temp near {mean_temperature:.1f}", +1)
                     else:
-                        if group_by_exposure:
-                            console.message(f"Processing one exposure group: {len(exposure_group)} "
-                                            f"files exposed {exposure_group[0].get_exposure()}", +1)
-                        # Within this exposure group, process temperature groups, or all temperatures if not grouping
-                        groups_by_temperature = \
-                            self.get_groups_by_temperature(exposure_group,
-                                                                   data_model.get_group_by_temperature(),
-                                                                   temperature_tolerance)
-                        for temperature_group in groups_by_temperature:
-                            if session_controller.thread_cancelled():
-                                return
-                            console.push_level()
-                            if len(temperature_group) < minimum_group_size:
-                                if group_by_temperature:
-                                    console.message(f"Ignoring one temperature group: {len(temperature_group)} "
-                                                    f"files at temp near {temperature_group[0].get_temperature()}", +1)
-                            else:
-                                if group_by_temperature:
-                                    console.message(f"Processing one temperature group: {len(temperature_group)} "
-                                                    f"files at temp near {temperature_group[0].get_temperature()}", +1)
-                                # Now we have a list of descriptors, grouped as appropriate, to process
-                                self.process_one_group(data_model, temperature_group,
-                                                       output_directory,
-                                                       data_model.get_master_combine_method(),
-                                                       substituted_folder_name,
-                                                       console, session_controller)
-                            console.pop_level()
+                        if grouping_by_temperature:
+                            console.message(f"Processing one temperature group: {len(temperature_group)} "
+                                            f"files at temp near {mean_temperature:.1f} "
+                                            f"({data_model.get_temperature_group_tolerance() * 100}% threshold)", +1)
+                        # Now we have a list of descriptors, grouped as appropriate, to process
+                        self.process_one_group(data_model, temperature_group,
+                                               output_directory,
+                                               data_model.get_master_combine_method(),
+                                               substituted_folder_name,
+                                               console, session_controller)
                     console.pop_level()
             console.pop_level()
         console.message("Group combining complete", 0)
@@ -177,7 +159,8 @@ class FileCombiner:
                 filter_name = SharedUtils.most_common_filter_name(descriptor_list)
 
                 # Do the combination
-                self.combine_files(descriptor_list, data_model, filter_name, output_file, console, session_controller)
+                self.combine_files(descriptor_list, data_model, filter_name,
+                                   output_file, console, session_controller)
                 if session_controller.thread_cancelled():
                     return None
                 # Files are combined.  Put away the inputs?
@@ -248,18 +231,11 @@ class FileCombiner:
 
     # Determine if all the dimensions are OK to proceed.
     #   All selected files must be the same size and the same binning
-    #   Include the precalibration bias file in this test if that method is selected
-
+    #
     @classmethod
-    def validate_file_dimensions(cls, descriptors: [FileDescriptor], data_model: DataModel) -> bool:
+    def validate_file_dimensions(cls, descriptors: [FileDescriptor]) -> bool:
         # Get list of paths of selected files
         if len(descriptors) > 0:
-
-            # If precalibration file is in use, add that name to the list
-            if data_model.get_precalibration_type() == Constants.CALIBRATION_FIXED_FILE:
-                calibration_descriptor = \
-                    RmFitsUtil.make_file_descriptor(data_model.get_precalibration_fixed_path())
-                descriptors.append(calibration_descriptor)
 
             # Get binning and dimension of first to use as a reference
             assert len(descriptors) > 0
@@ -291,33 +267,6 @@ class FileCombiner:
             for key, sub_group in descriptors_grouped:
                 sub_list = list(sub_group)
                 result.append(sub_list)
-            return result
-        else:
-            return [selected_files]   # One group with all the files
-
-    # Given list of file descriptors, return a list of lists, where each outer list is all the
-    # file descriptors with the same exposure within a given tolerance.
-    # Note that, because of the "tolerance" comparison, we need to process the list manually,
-    # not with the "groupby" function.
-
-    def get_groups_by_exposure(self,
-                               selected_files: [FileDescriptor],
-                               is_grouped: bool,
-                               tolerance: float) -> [[FileDescriptor]]:
-        if is_grouped:
-            result: [[FileDescriptor]] = []
-            files_sorted: [FileDescriptor] = sorted(selected_files, key=FileDescriptor.get_exposure)
-            current_exposure: float = files_sorted[0].get_exposure()
-            current_list: [FileDescriptor] = []
-            for next_file in files_sorted:
-                this_exposure = next_file.get_exposure()
-                if SharedUtils.values_same_within_tolerance(current_exposure, this_exposure, tolerance):
-                    current_list.append(next_file)
-                else:
-                    result.append(current_list)
-                    current_list = [next_file]
-                    current_exposure = this_exposure
-            result.append(current_list)
             return result
         else:
             return [selected_files]   # One group with all the files
@@ -363,12 +312,11 @@ class FileCombiner:
         file_names = [d.get_absolute_path() for d in input_files]
         combine_method = data_model.get_master_combine_method()
         # Get info about any precalibration that is to be done
-        calibrator = Calibrator(data_model)
         assert len(input_files) > 0
         binning: int = input_files[0].get_binning()
         (mean_exposure, mean_temperature) = ImageMath.mean_exposure_and_temperature(input_files)
         if combine_method == Constants.COMBINE_MEAN:
-            mean_data = ImageMath.combine_mean(file_names, calibrator, console, session_controller)
+            mean_data = ImageMath.combine_mean(file_names, console, session_controller)
             if session_controller.thread_running():
                 RmFitsUtil.create_combined_fits_file(substituted_file_name, mean_data,
                                                      FileDescriptor.FILE_TYPE_BIAS,
@@ -376,7 +324,7 @@ class FileCombiner:
                                                      mean_exposure, mean_temperature, filter_name, binning,
                                                      "Master Bias MEAN combined")
         elif combine_method == Constants.COMBINE_MEDIAN:
-            median_data = ImageMath.combine_median(file_names, calibrator, console, session_controller)
+            median_data = ImageMath.combine_median(file_names, console, session_controller)
             if session_controller.thread_running():
                 RmFitsUtil.create_combined_fits_file(substituted_file_name, median_data,
                                                      FileDescriptor.FILE_TYPE_BIAS,
@@ -386,7 +334,7 @@ class FileCombiner:
         elif combine_method == Constants.COMBINE_MINMAX:
             number_dropped_points = data_model.get_min_max_number_clipped_per_end()
             min_max_clipped_mean = ImageMath.combine_min_max_clip(file_names, number_dropped_points,
-                                                                   calibrator, console, session_controller)
+                                                                  console, session_controller)
             if session_controller.thread_running():
                 assert min_max_clipped_mean is not None
                 RmFitsUtil.create_combined_fits_file(substituted_file_name, min_max_clipped_mean,
@@ -399,7 +347,7 @@ class FileCombiner:
             assert combine_method == Constants.COMBINE_SIGMA_CLIP
             sigma_threshold = data_model.get_sigma_clip_threshold()
             sigma_clipped_mean = ImageMath.combine_sigma_clip(file_names, sigma_threshold,
-                                                               calibrator, console, session_controller)
+                                                              console, session_controller)
             if session_controller.thread_running():
                 assert sigma_clipped_mean is not None
                 RmFitsUtil.create_combined_fits_file(substituted_file_name, sigma_clipped_mean,
@@ -412,15 +360,10 @@ class FileCombiner:
 
     def describe_group(self, data_model: DataModel, number_files: int, sample_file: FileDescriptor, console: Console):
         binning = sample_file.get_binning()
-        exposure = sample_file.get_exposure()
         temperature = sample_file.get_temperature()
         processing_message = ""
         if data_model.get_group_by_size():
             processing_message += f"binned {binning} x {binning}"
-        if data_model.get_group_by_exposure():
-            if len(processing_message) > 0:
-                processing_message += ","
-            processing_message += f" exposed {exposure} seconds"
         if data_model.get_group_by_temperature():
             if len(processing_message) > 0:
                 processing_message += ","

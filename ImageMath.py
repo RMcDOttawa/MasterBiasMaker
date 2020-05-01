@@ -8,7 +8,6 @@ import numpy
 from numpy import ma, array
 from numpy.core.multiarray import ndarray
 
-from Calibrator import Calibrator
 from Console import Console
 from FileDescriptor import FileDescriptor
 from RmFitsUtil import RmFitsUtil
@@ -23,7 +22,6 @@ class ImageMath:
 
     @classmethod
     def combine_mean(cls, file_names: [str],
-                     calibrator: Calibrator,
                      console: Console,
                      session_controller: SessionController) -> ndarray:
         """Combine FITS files in given list using simple mean.  Return an ndarray containing the combined data."""
@@ -31,13 +29,9 @@ class ImageMath:
         mean_result = None
         console.push_level()
         console.message("Combining by simple mean", +1)
-        sample_file = RmFitsUtil.make_file_descriptor(file_names[0])
-        file_data: [ndarray]
-        file_data = RmFitsUtil.read_all_files_data(file_names)
+        file_data: [ndarray] = RmFitsUtil.read_all_files_data(file_names)
         if session_controller.thread_running():
-            calibrated_data = calibrator.calibrate_images(file_data, sample_file, console, session_controller)
-            if session_controller.thread_running():
-                mean_result = numpy.mean(calibrated_data, axis=0)
+            mean_result = numpy.mean(file_data, axis=0)
         console.pop_level()
         return mean_result
 
@@ -529,17 +523,13 @@ class ImageMath:
 
     @classmethod
     def combine_sigma_clip(cls, file_names: [str], sigma_threshold: float,
-                           calibrator: Calibrator, console: Console,
+                           console: Console,
                            session_controller: SessionController) -> Optional[ndarray]:
         console.push_level()
         console.message("Combine by sigma-clipped mean", +1)
         result = None
-        sample_file = RmFitsUtil.make_file_descriptor(file_names[0])
         file_data = numpy.asarray(RmFitsUtil.read_all_files_data(file_names))
         if session_controller.thread_running():
-            file_data = calibrator.calibrate_images(file_data, sample_file, console, session_controller)
-            if session_controller.thread_cancelled():
-                return None
             console.message("Calculating unclipped means", +1)
             column_means = numpy.mean(file_data, axis=0)
             if session_controller.thread_cancelled():
@@ -609,7 +599,7 @@ class ImageMath:
 
     @classmethod
     def combine_median(cls, file_names: [str],
-                       calibrator: Calibrator, console: Console,
+                       console: Console,
                        session_controller: SessionController) -> ndarray:
         assert len(file_names) > 0  # Otherwise the combine button would have been disabled
         console.push_level()
@@ -617,10 +607,7 @@ class ImageMath:
         median_result = None
         file_data = RmFitsUtil.read_all_files_data(file_names)
         if session_controller.thread_running():
-            sample_file = RmFitsUtil.make_file_descriptor(file_names[0])
-            file_data = calibrator.calibrate_images(file_data, sample_file, console, session_controller)
-            if session_controller.thread_running():
-                median_result = numpy.median(file_data, axis=0)
+            median_result = numpy.median(file_data, axis=0)
         console.pop_level()
         return median_result
 
@@ -666,7 +653,7 @@ class ImageMath:
 
     @classmethod
     def combine_min_max_clip(cls, file_names: [str], number_dropped_values: int,
-                             calibrator: Calibrator, console: Console,
+                             console: Console,
                              session_controller: SessionController) -> Optional[ndarray]:
         """Combine FITS files in given list using min/max-clipped mean.
         Return an ndarray containing the combined data."""
@@ -677,10 +664,7 @@ class ImageMath:
         if session_controller.thread_cancelled():
             return None
         file_data = numpy.asarray(file_data_list)
-        sample_file = RmFitsUtil.make_file_descriptor(file_names[0])
-        file_data = calibrator.calibrate_images(file_data, sample_file, console, session_controller)
-        if session_controller.thread_cancelled():
-            return None
+
         # Do the math using each algorithm, and display how long it takes
 
         # time_before_0 = datetime.now()

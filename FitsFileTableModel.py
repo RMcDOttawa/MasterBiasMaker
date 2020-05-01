@@ -1,4 +1,5 @@
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, QVariant
+from PyQt5.QtWidgets import QTableView
 
 from FileDescriptor import FileDescriptor
 
@@ -12,18 +13,18 @@ from FileDescriptor import FileDescriptor
 #       1:  Type            Image type (Dark, Light, Bias, Flat, Unknown)
 #       2:  Dimensions      Width, Height of image in pixels
 #       3:  Binning         The binning value (1x1, 2x2, etc., or Unknown)
-#       4:  Filter          Name of filter if light or flat frame
-#       5:  Exposure        Exposure time of frame in seconds
+#       4:  Temperature     CCD temperature
 
 
 class FitsFileTableModel(QAbstractTableModel):
-    headings = ["Name", "Type", "Dimensions", "Binning", "Exp.", "Temp."]
+    headings = ["Name", "Type", "Dimensions", "Binning", "Temp."]
 
-    def __init__(self, ignore_file_type: bool):
+    def __init__(self, table: QTableView, ignore_file_type: bool):
         """Constructor for empty fits file table model"""
         QAbstractTableModel.__init__(self)
         self._files_list: [FileDescriptor] = []
         self._ignore_file_type = ignore_file_type
+        self._table = table
 
     def set_ignore_file_type(self, ignore: bool):
         self._ignore_file_type = ignore
@@ -64,8 +65,6 @@ class FitsFileTableModel(QAbstractTableModel):
                 binning = descriptor.get_binning()
                 result = f"{binning} x {binning}"
             elif column_index == 4:
-                result = f"{descriptor.get_exposure():.3f}"
-            elif column_index == 5:
                 result = str(descriptor.get_temperature())
             else:
                 result = f"<{row_index},{column_index}>"
@@ -91,9 +90,9 @@ class FitsFileTableModel(QAbstractTableModel):
     # Sort - called when one of the column headers is clicked for sorting
 
     # noinspection PyMethodOverriding
-    def sort(self, column_index: int, sort_order: int):
+    def sort(self, column_index: int, sort_order: Qt.SortOrder):
         self.beginResetModel()
-        reverse_flag = sort_order == 1
+        reverse_flag = sort_order == Qt.DescendingOrder
         if column_index == 0:
             self._files_list = sorted(self._files_list,
                                       key=FileDescriptor.get_name,
@@ -112,13 +111,10 @@ class FitsFileTableModel(QAbstractTableModel):
                                       reverse=reverse_flag)
         elif column_index == 4:
             self._files_list = sorted(self._files_list,
-                                      key=FileDescriptor.get_exposure,
-                                      reverse=reverse_flag)
-        elif column_index == 5:
-            self._files_list = sorted(self._files_list,
                                       key=FileDescriptor.get_temperature,
                                       reverse=reverse_flag)
         self.endResetModel()
+        self._table.clearSelection()
 
     # We only allow the selection of files that are known to be Bias frames.
     # Or, if the "ignore file type" flag is on, then we allow the selection of any files

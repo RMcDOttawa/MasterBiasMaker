@@ -184,4 +184,3 @@ class RmFitsUtil:
             result.append(descriptor)
         return result
 
-

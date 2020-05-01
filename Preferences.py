@@ -151,12 +151,6 @@ class Preferences(QSettings):
     def set_group_by_size(self, is_grouped: bool):
         self.setValue(self.GROUP_BY_SIZE, is_grouped)
 
-    def get_group_by_exposure(self) -> bool:
-        return bool(self.value(self.GROUP_BY_EXPOSURE, defaultValue=False))
-
-    def set_group_by_exposure(self, is_grouped: bool):
-        self.setValue(self.GROUP_BY_EXPOSURE, is_grouped)
-
     def get_group_by_temperature(self) -> bool:
         return bool(self.value(self.GROUP_BY_TEMPERATURE, defaultValue=False))
 
