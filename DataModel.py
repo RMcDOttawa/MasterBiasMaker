@@ -23,7 +23,7 @@ class DataModel:
         self._disposition_subfolder_name: str = preferences.get_disposition_subfolder_name()
         self._group_by_size: bool = preferences.get_group_by_size()
         self._group_by_temperature: bool = preferences.get_group_by_temperature()
-        self._temperature_group_tolerance: float = preferences.get_temperature_group_tolerance()
+        self._temperature_group_bandwidth: float = preferences.get_temperature_group_bandwidth()
         self._ignore_file_type: bool = False
         self._ignore_groups_fewer_than: bool = preferences.get_ignore_groups_fewer_than()
         self._minimum_group_size: int = preferences.get_minimum_group_size()
@@ -101,14 +101,14 @@ class DataModel:
 
     # How much, as a percentage, can exposures vary before the files are considered to be in a different group?
 
-    def get_temperature_group_tolerance(self) -> float:
-        percentage: float = self._temperature_group_tolerance
-        assert 0.0 <= percentage < 1.0
-        return percentage
+    def get_temperature_group_bandwidth(self) -> float:
+        bandwidth: float = self._temperature_group_bandwidth
+        assert 0.0 <= bandwidth < 50.0
+        return bandwidth
 
-    def set_temperature_group_tolerance(self, percentage: float):
-        assert 0.0 <= percentage < 1.0
-        self._temperature_group_tolerance = percentage
+    def set_temperature_group_bandwidth(self, bandwidth: float):
+        assert 0.0 <= bandwidth < 50.0
+        self._temperature_group_bandwidth = bandwidth
 
     def get_ignore_file_type(self) -> bool:
         return self._ignore_file_type

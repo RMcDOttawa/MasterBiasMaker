@@ -17,40 +17,40 @@ from SharedUtils import SharedUtils
 
 class FileCombiner:
 
-    def __init__(self, file_moved_callback: Callable[[str], None]):
+    def __init__(self, session_controller: SessionController,
+                 file_moved_callback: Callable[[str], None]):
         self.callback_method = file_moved_callback
+        self._session_controller = session_controller
 
     # Process one set of files.  Output to the given path, if provided.  If not provided, prompt the user for it.
     
     def original_non_grouped_processing(self, selected_files: [FileDescriptor],
                                         data_model: DataModel,
                                         output_file: str,
-                                        console: Console,
-                                        session_controller: SessionController):
+                                        console: Console):
         console.push_level()
         console.message("Using single-file processing", +1)
         # We'll use the first file in the list as a sample for things like image size
         assert len(selected_files) > 0
         # Confirm that these are all bias frames, and can be combined (same binning and dimensions)
         if FileCombiner.all_compatible_sizes(selected_files):
-            if session_controller.thread_running() and (data_model.get_ignore_file_type()
-                                                        or FileCombiner.all_of_type(selected_files,
-                                                                                    FileDescriptor.FILE_TYPE_BIAS)):
+            self.check_cancellation()
+            if data_model.get_ignore_file_type() or FileCombiner.all_of_type(selected_files,
+                                                                             FileDescriptor.FILE_TYPE_BIAS):
                 # Get (most common) filter name in the set
                 # Since these are bias frames, the filter is meaningless, but we need the value
                 # for the shared "create file" routine
                 filter_name = SharedUtils.most_common_filter_name(selected_files)
 
                 # Do the combination
-                self.combine_files(selected_files, data_model, filter_name, output_file, console, session_controller)
+                self.combine_files(selected_files, data_model, filter_name, output_file, console)
+                self.check_cancellation()
                 # Files are combined.  Put away the inputs?
-                # Return list of any that were moved, in case the UI needs to be adjusted
-                if session_controller.thread_running():
-                    substituted_folder_name = SharedUtils.substitute_date_time_filter_in_string(
-                        data_model.get_disposition_subfolder_name())
-                    self.handle_input_files_disposition(data_model.get_input_file_disposition(),
-                                                        substituted_folder_name,
-                                                        selected_files, console)
+                substituted_folder_name = SharedUtils.substitute_date_time_filter_in_string(
+                    data_model.get_disposition_subfolder_name())
+                self.handle_input_files_disposition(data_model.get_input_file_disposition(),
+                                                    substituted_folder_name,
+                                                    selected_files, console)
             else:
                 raise MasterMakerExceptions.NotAllBiasFrames
         else:
@@ -67,9 +67,9 @@ class FileCombiner:
     def process_groups(self, data_model: DataModel,
                        selected_files: [FileDescriptor],
                        output_directory: str,
-                       console: Console,
-                       session_controller: SessionController):
+                       console: Console):
         console.push_level()
+        self.check_cancellation()
         temperature_tolerance = data_model.get_temperature_group_tolerance()
         disposition_folder = data_model.get_disposition_subfolder_name()
         substituted_folder_name = SharedUtils.substitute_date_time_filter_in_string(disposition_folder)
@@ -85,8 +85,7 @@ class FileCombiner:
         grouping_by_temperature = data_model.get_group_by_temperature()
         for size_group in groups_by_size:
             console.push_level()
-            if session_controller.thread_cancelled():
-                return
+            self.check_cancellation()
             # Message about this group only if this grouping was requested
             if len(size_group) < minimum_group_size:
                 if grouping_by_size:
@@ -103,8 +102,7 @@ class FileCombiner:
                                                    temperature_tolerance)
                 for temperature_group in groups_by_temperature:
                     console.push_level()
-                    if session_controller.thread_cancelled():
-                        return
+                    self.check_cancellation()
                     (mean_exposure, mean_temperature) = ImageMath.mean_exposure_and_temperature(temperature_group)
                     if len(temperature_group) < minimum_group_size:
                         if grouping_by_temperature:
@@ -120,7 +118,7 @@ class FileCombiner:
                                                output_directory,
                                                data_model.get_master_combine_method(),
                                                substituted_folder_name,
-                                               console, session_controller)
+                                               console)
                     console.pop_level()
             console.pop_level()
         console.message("Group combining complete", 0)
@@ -138,8 +136,7 @@ class FileCombiner:
                           output_directory: str,
                           combine_method: int,
                           disposition_folder_name,
-                          console: Console,
-                          session_controller: SessionController):
+                          console: Console):
         assert len(descriptor_list) > 0
         sample_file: FileDescriptor = descriptor_list[0]
         console.push_level()
@@ -160,9 +157,8 @@ class FileCombiner:
 
                 # Do the combination
                 self.combine_files(descriptor_list, data_model, filter_name,
-                                   output_file, console, session_controller)
-                if session_controller.thread_cancelled():
-                    return None
+                                   output_file, console)
+                self.check_cancellation()
                 # Files are combined.  Put away the inputs?
                 # Return list of any that were moved, in case the UI needs to be adjusted
                 self.handle_input_files_disposition(data_model.get_input_file_disposition(),
@@ -190,6 +186,7 @@ class FileCombiner:
             console.message("Moving processed files to " + sub_folder_name, 0)
             # User wants us to move the input files into a sub-folder
             for descriptor in descriptors:
+                self.check_cancellation()
                 if SharedUtils.dispose_one_file_to_sub_folder(descriptor, sub_folder_name):
                     # Successfully moved the file;  tell the user interface
                     self.callback_method(descriptor.get_absolute_path())
@@ -305,8 +302,7 @@ class FileCombiner:
                       data_model: DataModel,
                       filter_name: str,
                       output_path: str,
-                      console: Console,
-                      session_controller: SessionController):
+                      console: Console):
         console.push_level()
         substituted_file_name = SharedUtils.substitute_date_time_filter_in_string(output_path)
         file_names = [d.get_absolute_path() for d in input_files]
@@ -316,46 +312,46 @@ class FileCombiner:
         binning: int = input_files[0].get_binning()
         (mean_exposure, mean_temperature) = ImageMath.mean_exposure_and_temperature(input_files)
         if combine_method == Constants.COMBINE_MEAN:
-            mean_data = ImageMath.combine_mean(file_names, console, session_controller)
-            if session_controller.thread_running():
-                RmFitsUtil.create_combined_fits_file(substituted_file_name, mean_data,
-                                                     FileDescriptor.FILE_TYPE_BIAS,
-                                                     "Bias Frame",
-                                                     mean_exposure, mean_temperature, filter_name, binning,
-                                                     "Master Bias MEAN combined")
+            mean_data = ImageMath.combine_mean(file_names, console, self._session_controller)
+            self.check_cancellation()
+            RmFitsUtil.create_combined_fits_file(substituted_file_name, mean_data,
+                                                 FileDescriptor.FILE_TYPE_BIAS,
+                                                 "Bias Frame",
+                                                 mean_exposure, mean_temperature, filter_name, binning,
+                                                 "Master Bias MEAN combined")
         elif combine_method == Constants.COMBINE_MEDIAN:
-            median_data = ImageMath.combine_median(file_names, console, session_controller)
-            if session_controller.thread_running():
-                RmFitsUtil.create_combined_fits_file(substituted_file_name, median_data,
-                                                     FileDescriptor.FILE_TYPE_BIAS,
-                                                     "Bias Frame",
-                                                     mean_exposure, mean_temperature, filter_name, binning,
-                                                     "Master Bias MEDIAN combined")
+            median_data = ImageMath.combine_median(file_names, console, self._session_controller)
+            self.check_cancellation()
+            RmFitsUtil.create_combined_fits_file(substituted_file_name, median_data,
+                                                 FileDescriptor.FILE_TYPE_BIAS,
+                                                 "Bias Frame",
+                                                 mean_exposure, mean_temperature, filter_name, binning,
+                                                 "Master Bias MEDIAN combined")
         elif combine_method == Constants.COMBINE_MINMAX:
             number_dropped_points = data_model.get_min_max_number_clipped_per_end()
             min_max_clipped_mean = ImageMath.combine_min_max_clip(file_names, number_dropped_points,
-                                                                  console, session_controller)
-            if session_controller.thread_running():
-                assert min_max_clipped_mean is not None
-                RmFitsUtil.create_combined_fits_file(substituted_file_name, min_max_clipped_mean,
-                                                     FileDescriptor.FILE_TYPE_BIAS,
-                                                     "Bias Frame",
-                                                     mean_exposure, mean_temperature, filter_name, binning,
-                                                     f"Master Bias Min/Max Clipped "
-                                                     f"(drop {number_dropped_points}) Mean combined")
+                                                                  console, self._session_controller)
+            self.check_cancellation()
+            assert min_max_clipped_mean is not None
+            RmFitsUtil.create_combined_fits_file(substituted_file_name, min_max_clipped_mean,
+                                                 FileDescriptor.FILE_TYPE_BIAS,
+                                                 "Bias Frame",
+                                                 mean_exposure, mean_temperature, filter_name, binning,
+                                                 f"Master Bias Min/Max Clipped "
+                                                 f"(drop {number_dropped_points}) Mean combined")
         else:
             assert combine_method == Constants.COMBINE_SIGMA_CLIP
             sigma_threshold = data_model.get_sigma_clip_threshold()
             sigma_clipped_mean = ImageMath.combine_sigma_clip(file_names, sigma_threshold,
-                                                              console, session_controller)
-            if session_controller.thread_running():
-                assert sigma_clipped_mean is not None
-                RmFitsUtil.create_combined_fits_file(substituted_file_name, sigma_clipped_mean,
-                                                     FileDescriptor.FILE_TYPE_BIAS,
-                                                     "Bias Frame",
-                                                     mean_exposure, mean_temperature, filter_name, binning,
-                                                     f"Master Bias Sigma Clipped "
-                                                     f"(threshold {sigma_threshold}) Mean combined")
+                                                              console, self._session_controller)
+            self.check_cancellation()
+            assert sigma_clipped_mean is not None
+            RmFitsUtil.create_combined_fits_file(substituted_file_name, sigma_clipped_mean,
+                                                 FileDescriptor.FILE_TYPE_BIAS,
+                                                 "Bias Frame",
+                                                 mean_exposure, mean_temperature, filter_name, binning,
+                                                 f"Master Bias Sigma Clipped "
+                                                 f"(threshold {sigma_threshold}) Mean combined")
         console.pop_level()
 
     def describe_group(self, data_model: DataModel, number_files: int, sample_file: FileDescriptor, console: Console):
@@ -369,3 +365,10 @@ class FileCombiner:
                 processing_message += ","
             processing_message += f" at {temperature} degrees."
         console.message(f"Processing {number_files} files {processing_message}", +1)
+
+    def check_cancellation(self):
+        if self._session_controller.thread_cancelled():
+            raise MasterMakerExceptions.SessionCancelled
+
+# todo change temperature "group by" to cluster analysis
+# todo clustering Do Grouping

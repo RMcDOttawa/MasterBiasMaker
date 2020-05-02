@@ -66,7 +66,7 @@ class MainWindow(QMainWindow):
         self.ui.groupByTemperatureCB.setChecked(data_model.get_group_by_temperature())
         self.ui.ignoreSmallGroupsCB.setChecked(data_model.get_ignore_groups_fewer_than())
 
-        self.ui.temperatureGroupTolerance.setText(f"{100 * data_model.get_temperature_group_tolerance():.0f}")
+        self.ui.temperatureGroupBandwidth.setText(f"{data_model.get_temperature_group_bandwidth()}")
         self.ui.minimumGroupSize.setText(str(data_model.get_minimum_group_size()))
 
         # Set up the file table
@@ -135,7 +135,7 @@ class MainWindow(QMainWindow):
         self.ui.groupBySizeCB.clicked.connect(self.group_by_size_clicked)
         self.ui.groupByTemperatureCB.clicked.connect(self.group_by_temperature_clicked)
         self.ui.ignoreSmallGroupsCB.clicked.connect(self.ignore_small_groups_clicked)
-        self.ui.temperatureGroupTolerance.editingFinished.connect(self.temperature_group_tolerance_changed)
+        self.ui.temperatureGroupBandwidth.editingFinished.connect(self.temperature_group_bandwidth_changed)
         self.ui.minimumGroupSize.editingFinished.connect(self.minimum_group_size_changed)
 
         # Detect changes to the tab view
@@ -272,15 +272,15 @@ class MainWindow(QMainWindow):
         self._field_validity[self.ui.subFolderName] = valid
         self.enable_buttons()
 
-    def temperature_group_tolerance_changed(self):
-        """User has entered value in temperature group tolerance field.  Validate and save"""
-        proposed_new_number: str = self.ui.temperatureGroupTolerance.text()
-        new_number = Validators.valid_float_in_range(proposed_new_number, 0.0, 99.999)
+    def temperature_group_bandwidth_changed(self):
+        """User has entered value in temperature group bandwidth field.  Validate and save"""
+        proposed_new_number: str = self.ui.temperatureGroupBandwidth.text()
+        new_number = Validators.valid_float_in_range(proposed_new_number, 0.0, 50.0)
         valid = new_number is not None
         if valid:
-            self._data_model.set_temperature_group_tolerance(new_number / 100.0)
-        SharedUtils.background_validity_color(self.ui.temperatureGroupTolerance, valid)
-        self._field_validity[self.ui.temperatureGroupTolerance] = valid
+            self._data_model.set_temperature_group_bandwidth(new_number)
+        SharedUtils.background_validity_color(self.ui.temperatureGroupBandwidth, valid)
+        self._field_validity[self.ui.temperatureGroupBandwidth] = valid
 
     def enable_fields(self):
         """Enable text fields depending on state of various radio buttons"""
@@ -295,7 +295,7 @@ class MainWindow(QMainWindow):
                                          == Constants.INPUT_DISPOSITION_SUBFOLDER)
 
         # Grouping parameters go with their corresponding checkbox
-        self.ui.temperatureGroupTolerance.setEnabled(self._data_model.get_group_by_temperature())
+        self.ui.temperatureGroupBandwidth.setEnabled(self._data_model.get_group_by_temperature())
 
     # Open a file dialog to pick files to be processed
 
@@ -511,7 +511,7 @@ class MainWindow(QMainWindow):
         if self._data_model.get_group_by_size():
             group_parts.append("Size")
         if self._data_model.get_group_by_temperature():
-            group_parts.append("Temperature")
+            group_parts.append(f"Temperature ({self._data_model.get_temperature_group_bandwidth()})")
         if self._data_model.get_ignore_groups_fewer_than():
             ignore = f"Min group size {self._data_model.get_minimum_group_size()}"
         else:

@@ -34,3 +34,5 @@ class TestException(Exception):
     pass
 
 
+class SessionCancelled(Exception):
+    pass

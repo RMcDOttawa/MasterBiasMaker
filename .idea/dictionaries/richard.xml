@@ -3,6 +3,7 @@
     <words>
       <w>autorecursive</w>
       <w>ccdsoft</w>
+      <w>classmethod</w>
       <w>combinable</w>
       <w>enablement</w>
       <w>exptime</w>
@@ -25,6 +26,7 @@
       <w>preprocessing</w>
       <w>qthread</w>
       <w>quicksort</w>
+      <w>searchsorted</w>
       <w>stdev</w>
       <w>stdevs</w>
       <w>subfolder</w>

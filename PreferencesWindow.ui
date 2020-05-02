@@ -156,7 +156,7 @@
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QLineEdit" name="temperatureGroupTolerance">
+       <widget class="QLineEdit" name="temperatureGroupBandwidth">
         <property name="maximumSize">
          <size>
           <width>41</width>
@@ -192,20 +192,13 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="2">
-       <widget class="QLabel" name="label_8">
-        <property name="text">
-         <string>%</string>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="0">
        <widget class="QCheckBox" name="groupByTemperatureCB">
         <property name="toolTip">
          <string>Process sets of files having different CCD temperatures</string>
         </property>
         <property name="text">
-         <string>Group by Temperature, within:</string>
+         <string>Group by Temperature, width:</string>
         </property>
        </widget>
       </item>
@@ -297,7 +290,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="dispositionGroup"/>
   <buttongroup name="combineMethodGroup"/>
+  <buttongroup name="dispositionGroup"/>
  </buttongroups>
 </ui>
