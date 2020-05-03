@@ -29,7 +29,7 @@ Options
                                     used only if no "group" options are chosen)
 
     -gs  or --groupsize             Group files by size (dimensions and binning)
-    -gt  or --grouptemperature <%>  Group files by temperature, within given % tolerance
+    -gt  or --grouptemperature <w>  Group files by temperature, with given bandwidth
     -mg  or --minimumgroup <n>      Ignore groups with fewer than <n> files
     -od  or --outputdirectory <d>   Directory to receive grouped master files
 
