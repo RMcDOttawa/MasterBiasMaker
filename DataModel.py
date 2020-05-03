@@ -103,11 +103,11 @@ class DataModel:
 
     def get_temperature_group_bandwidth(self) -> float:
         bandwidth: float = self._temperature_group_bandwidth
-        assert 0.0 <= bandwidth < 50.0
+        assert 0.1 <= bandwidth <= 50.0
         return bandwidth
 
     def set_temperature_group_bandwidth(self, bandwidth: float):
-        assert 0.0 <= bandwidth < 50.0
+        assert 0.1 <= bandwidth <= 50.0
         self._temperature_group_bandwidth = bandwidth
 
     def get_ignore_file_type(self) -> bool:

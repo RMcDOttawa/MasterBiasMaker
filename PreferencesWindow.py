@@ -125,7 +125,7 @@ class PreferencesWindow(QDialog):
     def temperature_group_bandwidth_changed(self):
         """User has entered value in temperature group bandwidth field.  Validate and save"""
         proposed_new_number: str = self.ui.temperatureGroupBandwidth.text()
-        new_number = Validators.valid_float_in_range(proposed_new_number, 0.0, 50.0)
+        new_number = Validators.valid_float_in_range(proposed_new_number, 0.1, 50.0)
         valid = new_number is not None
         if valid:
             self._preferences.set_temperature_group_bandwidth(new_number)

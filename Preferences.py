@@ -160,12 +160,12 @@ class Preferences(QSettings):
     # Bandwidth for the clustering of files by temperature
 
     def get_temperature_group_bandwidth(self) -> float:
-        bandwidth: float = float(self.value(self.TEMPERATURE_GROUP_BANDWIDTH, defaultValue=2.0))
-        assert 0 <= bandwidth < 50
+        bandwidth: float = float(self.value(self.TEMPERATURE_GROUP_BANDWIDTH, defaultValue=1.0))
+        assert 0.1 <= bandwidth <= 50
         return bandwidth
 
     def set_temperature_group_bandwidth(self, bandwidth: float):
-        assert 0 <= bandwidth < 50
+        assert 0.1 <= bandwidth <= 50
         self.setValue(self.TEMPERATURE_GROUP_BANDWIDTH, bandwidth)
 
     # Should we ignore small groups (probably haven't finished collecting them yet)?  How small?

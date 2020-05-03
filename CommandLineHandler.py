@@ -113,11 +113,11 @@ class CommandLineHandler:
         if args.grouptemperature is not None:
             self._data_model.set_group_by_temperature(True)
             bandwidth = float(args.grouptemperature)
-            if 0 <= bandwidth <= 50:
+            if 0.1 <= bandwidth <= 50:
                 print(f"   Group files by temperature with bandwidth {bandwidth}")
                 self._data_model.set_temperature_group_bandwidth(bandwidth)
             else:
-                print("-gt bandwidth must be between 0 and 50")
+                print("-gt bandwidth must be between 0.1 and 50")
                 valid = False
         if args.minimumgroup is not None:
             self._data_model.set_ignore_groups_fewer_than(True)

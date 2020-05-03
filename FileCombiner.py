@@ -110,11 +110,11 @@ class FileCombiner:
                     if len(temperature_group) < minimum_group_size:
                         if grouping_by_temperature:
                             console.message(f"Ignoring one temperature group: {len(temperature_group)} "
-                                            f"files at temp near {mean_temperature:.1f}", +1)
+                                            f"files with mean temperature {mean_temperature:.1f}", +1)
                     else:
                         if grouping_by_temperature:
                             console.message(f"Processing one temperature group: {len(temperature_group)} "
-                                            f"files at temp near {mean_temperature:.1f} "
+                                            f"files with mean temperature {mean_temperature:.1f} "
                                             f"({temperature_bandwidth} bandwidth)", +1)
                         # Now we have a list of descriptors, grouped as appropriate, to process
                         self.process_one_group(data_model, temperature_group,
