@@ -433,7 +433,7 @@ class ImageMath:
     def min_max_clip_version_5(cls, file_data: ndarray, number_dropped_values: int,
                                console: Console, session_controller: SessionController):
         console.push_level()
-        console.message(f"Using min-max clip version 5:  masked-array matrix operation with column repair", +1)
+        console.message(f"Using min-max clip with {number_dropped_values} iterations", +1)
         masked_array = ma.MaskedArray(file_data)
         drop_counter = 1
         while drop_counter <= number_dropped_values:
@@ -528,7 +528,7 @@ class ImageMath:
                            console: Console,
                            session_controller: SessionController) -> Optional[ndarray]:
         console.push_level()
-        console.message("Combine by sigma-clipped mean", +1)
+        console.message(f"Combine by sigma-clipped mean, z-score threshold {sigma_threshold}", +1)
         file_data = numpy.asarray(RmFitsUtil.read_all_files_data(file_names))
 
         console.message("Calculating unclipped means", +1)

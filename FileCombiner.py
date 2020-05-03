@@ -93,11 +93,11 @@ class FileCombiner:
             if len(size_group) < minimum_group_size:
                 if grouping_by_size:
                     console.message(f"Ignoring one size group: {len(size_group)} "
-                                    f"files sized {size_group[0].get_size_key()}", +1)
+                                    f"files {size_group[0].get_size_key()}", +1)
             else:
                 if grouping_by_size:
                     console.message(f"Processing one size group: {len(size_group)} "
-                                    f"files sized {size_group[0].get_size_key()}", +1)
+                                    f"files {size_group[0].get_size_key()}", +1)
                 # Within this size group, process temperature groups, or all temperatures if not grouping
                 groups_by_temperature = \
                     self.get_groups_by_temperature(size_group,
@@ -146,7 +146,9 @@ class FileCombiner:
         self.describe_group(data_model, len(descriptor_list), sample_file, console)
 
         # Make up a file name for this group's output, into the given directory
-        file_name = SharedUtils.get_file_name_portion(combine_method, sample_file)
+        file_name = SharedUtils.get_file_name_portion(combine_method, sample_file,
+                                                      data_model.get_sigma_clip_threshold(),
+                                                      data_model.get_min_max_number_clipped_per_end())
         output_file = f"{output_directory}/{file_name}"
 
         # Confirm that these are all bias frames, and can be combined (same binning and dimensions)

@@ -137,16 +137,19 @@ class SharedUtils:
     #   of the form Bias-Mean-yyyymmddhhmm-temp-x-y-bin.fit
 
     @classmethod
-    def create_output_path(cls, sample_input_file: FileDescriptor, combine_method: int):
+    def create_output_path(cls, sample_input_file: FileDescriptor, combine_method: int,
+                                              sigma_threshold, min_max_clipped):
         """Create an output file name in the case where one wasn't specified"""
         # Get directory of sample input file
         directory_prefix = os.path.dirname(sample_input_file.get_absolute_path())
-        file_name = cls.get_file_name_portion(combine_method, sample_input_file)
+        file_name = cls.get_file_name_portion(combine_method, sample_input_file,
+                                              sigma_threshold, min_max_clipped)
         file_path = f"{directory_prefix}/{file_name}"
         return file_path
 
     @classmethod
-    def get_file_name_portion(cls, combine_method, sample_input_file):
+    def get_file_name_portion(cls, combine_method, sample_input_file,
+                                              sigma_threshold, min_max_clipped):
         # Get other components of name
         now = datetime.now()
         date_time_string = now.strftime("%Y%m%d-%H%M")
@@ -156,6 +159,10 @@ class SharedUtils:
         # Removed dimensions from file name - cluttered and not needed with binning included
         binning = f"{sample_input_file.get_binning()}x{sample_input_file.get_binning()}"
         method = Constants.combine_method_string(combine_method)
+        if combine_method == Constants.COMBINE_SIGMA_CLIP:
+            method += str(sigma_threshold)
+        elif combine_method == Constants.COMBINE_MINMAX:
+            method += str(min_max_clipped)
         file_name = f"BIAS-{method}-{date_time_string}-{exposure}s-{temperature}C-{binning}.fit"
 
         return file_name

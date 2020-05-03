@@ -67,7 +67,8 @@ class FileDescriptor:
     # Get the "size key" used for grouping files.
     # Size key is a string with x and y dimensions and binning joined by a delimiter
     def get_size_key(self):
-        return f"{self._binning}:{self._x_size}:{self._y_size}"
+        return f"binned {self._binning} x {self._binning}, dimensions " \
+               f"{self._x_size} x {self._y_size}"
 
     def set_dimensions(self, x_size: int, y_size: int):
         self._x_size = x_size
