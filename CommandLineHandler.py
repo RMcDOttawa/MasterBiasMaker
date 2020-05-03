@@ -114,7 +114,7 @@ class CommandLineHandler:
             self._data_model.set_group_by_temperature(True)
             tolerance = float(args.grouptemperature)
             if 0 <= tolerance <= 100:
-                print(f"   Group files by temperature with tolerance {tolerance}%")
+                print(f"   Group files by temperature with bandwidth {tolerance}%")
                 self._data_model.set_temperature_group_tolerance(tolerance / 100.0)
             else:
                 print("-gt tolerance must be between 0 and 100")

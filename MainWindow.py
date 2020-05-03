@@ -439,7 +439,7 @@ class MainWindow(QMainWindow):
         self.minimum_group_size_changed()
         self.sigma_threshold_changed()
         self.sub_folder_name_changed()
-        self.temperature_group_tolerance_changed()
+        self.temperature_group_bandwidth_changed()
         self.enable_buttons()
         return self.ui.combineSelectedButton.isEnabled()
 
@@ -534,4 +534,3 @@ class MainWindow(QMainWindow):
 
     def remove_from_ui(self, path_to_remove: str):
         self._table_model.remove_file_path(path_to_remove)
-

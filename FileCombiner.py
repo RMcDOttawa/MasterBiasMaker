@@ -4,6 +4,9 @@
 from itertools import groupby
 from typing import Callable
 
+import numpy
+from sklearn.cluster import MeanShift
+
 import MasterMakerExceptions
 from Console import Console
 from Constants import Constants
@@ -70,7 +73,7 @@ class FileCombiner:
                        console: Console):
         console.push_level()
         self.check_cancellation()
-        temperature_tolerance = data_model.get_temperature_group_tolerance()
+        temperature_bandwidth = data_model.get_temperature_group_bandwidth()
         disposition_folder = data_model.get_disposition_subfolder_name()
         substituted_folder_name = SharedUtils.substitute_date_time_filter_in_string(disposition_folder)
         console.message("Process groups into output directory: " + output_directory, +1)
@@ -99,7 +102,7 @@ class FileCombiner:
                 groups_by_temperature = \
                     self.get_groups_by_temperature(size_group,
                                                    data_model.get_group_by_temperature(),
-                                                   temperature_tolerance)
+                                                   temperature_bandwidth)
                 for temperature_group in groups_by_temperature:
                     console.push_level()
                     self.check_cancellation()
@@ -112,7 +115,7 @@ class FileCombiner:
                         if grouping_by_temperature:
                             console.message(f"Processing one temperature group: {len(temperature_group)} "
                                             f"files at temp near {mean_temperature:.1f} "
-                                            f"({data_model.get_temperature_group_tolerance() * 100}% threshold)", +1)
+                                            f"({temperature_bandwidth} bandwidth)", +1)
                         # Now we have a list of descriptors, grouped as appropriate, to process
                         self.process_one_group(data_model, temperature_group,
                                                output_directory,
@@ -270,28 +273,43 @@ class FileCombiner:
 
     # Given list of file descriptors, return a list of lists, where each outer list is all the
     # file descriptors with the same temperature within a given tolerance
-    # Note that, because of the "tolerance" comparison, we need to process the list manually,
-    # not with the "groupby" function.
+    # Note that, because of the "tolerance" comparison, this is a clustering analysis, not
+    # a simple python "groupby", which assumes the values are exact.
+    #
+    # For this simple 1-dimensional clustering we can use the MeanShift function from
+    # the machine learning package, sklearn
+    #
 
     def get_groups_by_temperature(self,
                                   selected_files: [FileDescriptor],
                                   is_grouped: bool,
-                                  tolerance: float) -> [[FileDescriptor]]:
+                                  bandwidth: float) -> [[FileDescriptor]]:
         if is_grouped:
-            result: [[FileDescriptor]] = []
-            files_sorted: [FileDescriptor] = sorted(selected_files, key=FileDescriptor.get_temperature)
-            current_temperature: float = files_sorted[0].get_temperature()
-            current_list: [FileDescriptor] = []
-            for next_file in files_sorted:
-                this_temperature = next_file.get_temperature()
-                if SharedUtils.values_same_within_tolerance(current_temperature, this_temperature, tolerance):
-                    current_list.append(next_file)
-                else:
-                    result.append(current_list)
-                    current_list = [next_file]
-                    current_temperature = this_temperature
-            result.append(current_list)
-            return result
+            # We'll get the indices of the temperature clusters, then use those indices
+            # on the file descriptors
+            result_array: [[FileDescriptor]] = []
+            temperatures: [float] = [file.get_temperature() for file in selected_files]
+            data_to_cluster = numpy.array(temperatures).reshape(-1, 1)
+            mean_shift = MeanShift(bandwidth=bandwidth)
+            mean_shift.fit(data_to_cluster)
+            arbitrary_cluster_labels = mean_shift.labels_
+            # cluster_labels is an array of integers, with each "cluster" having the same integer label
+            unique_labels = numpy.unique(arbitrary_cluster_labels)
+            # So if we gather the unique label values, that is gathering the clusters
+            for label in unique_labels:
+                # Flag the items in this cluster
+                cluster_membership: [bool] = arbitrary_cluster_labels == label
+                # Get the indices of the items in this cluster
+                member_indices: [int] = numpy.where(cluster_membership)[0].tolist()
+                # Get the descriptors in this cluster and add to the output array
+                this_cluster_descriptors: [FileDescriptor] = [selected_files[i] for i in member_indices]
+                result_array.append(this_cluster_descriptors)
+
+            # The groups array is in arbitrary order - determined by the clustering algorithm
+            # We'd like to have it in a predictable order.  Sort by first temperature in each group
+            result_array.sort(key=lambda g: g[0].get_temperature())
+            return result_array
+
         else:
             return [selected_files]   # One group with all the files
 
@@ -369,6 +387,3 @@ class FileCombiner:
     def check_cancellation(self):
         if self._session_controller.thread_cancelled():
             raise MasterMakerExceptions.SessionCancelled
-
-# todo change temperature "group by" to cluster analysis
-# todo clustering Do Grouping

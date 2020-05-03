@@ -7,6 +7,7 @@
       <w>combinable</w>
       <w>enablement</w>
       <w>exptime</w>
+      <w>flatnotmasked</w>
       <w>groupby</w>
       <w>groupexposure</w>
       <w>groupsize</w>
@@ -27,6 +28,7 @@
       <w>qthread</w>
       <w>quicksort</w>
       <w>searchsorted</w>
+      <w>sklearn</w>
       <w>stdev</w>
       <w>stdevs</w>
       <w>subfolder</w>
