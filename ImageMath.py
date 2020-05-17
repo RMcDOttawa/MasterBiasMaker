@@ -87,6 +87,7 @@ class ImageMath:
                 # print("   Try reducing number of dropped values")
                 result_mean = cls.calc_mm_clipped_mean(column, number_dropped_values - 1, console,
                                                        session_controller)
+                cls.check_cancellation(session_controller)
             else:
                 # Even dropping only 1 value we emptied the list.  Just mean the whole thing.
                 # print("   Dropped values at minimum.  Mean column without clipping.")

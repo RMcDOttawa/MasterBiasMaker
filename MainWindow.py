@@ -485,8 +485,11 @@ class MainWindow(QMainWindow):
                 or self._data_model.get_group_by_temperature():
             return self.get_group_output_directory()
         else:
-            return self.get_output_file(SharedUtils.create_output_path(sample_file,
-                                                                       self._data_model.get_master_combine_method()))
+            path = SharedUtils.create_output_path(sample_file, self._data_model.get_master_combine_method(),
+                                                  self._data_model.get_sigma_clip_threshold(),
+                                                  self._data_model.get_min_max_number_clipped_per_end())
+            return self.get_output_file(path)
+            #todo test non-grouped for new suggested file name
 
     #
     #   Fill in the text fields in the main pane that summarize the settings

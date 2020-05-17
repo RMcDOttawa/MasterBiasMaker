@@ -95,6 +95,9 @@
             <height>32</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string>De-select all the rows in the table.</string>
+          </property>
           <property name="text">
            <string>Select None</string>
           </property>
@@ -107,6 +110,9 @@
             <width>99</width>
             <height>32</height>
            </size>
+          </property>
+          <property name="toolTip">
+           <string>Select all the rows in the table</string>
           </property>
           <property name="text">
            <string>Select All</string>
@@ -281,6 +287,9 @@
             <width>111</width>
             <height>32</height>
            </size>
+          </property>
+          <property name="toolTip">
+           <string>Open a file dialog to pick FITS files to process</string>
           </property>
           <property name="text">
            <string>Pick Files</string>
@@ -462,6 +471,9 @@
            </item>
            <item row="4" column="0" colspan="3">
             <widget class="QCheckBox" name="ignoreFileType">
+             <property name="toolTip">
+              <string>Allow selection of any rows in table, ignoring the FITS file type.</string>
+             </property>
              <property name="text">
               <string>Ignore FITS file type, allow combine</string>
              </property>
@@ -490,6 +502,9 @@
           <layout class="QGridLayout" name="gridLayout_3">
            <item row="2" column="0">
             <widget class="QCheckBox" name="ignoreSmallGroupsCB">
+             <property name="toolTip">
+              <string>Don't process groups with fewer than the given number of files in them.</string>
+             </property>
              <property name="text">
               <string>Ignore groups with fewer than:</string>
              </property>
@@ -531,7 +546,7 @@
               </size>
              </property>
              <property name="toolTip">
-              <string>Consider temperatures to be the same if the are within this percentage of each other.</string>
+              <string>Group together temperatures that are within this much on either side of the group average.</string>
              </property>
             </widget>
            </item>
@@ -542,6 +557,9 @@
                <width>31</width>
                <height>21</height>
               </size>
+             </property>
+             <property name="toolTip">
+              <string>Cut-off size for groups to be processed</string>
              </property>
             </widget>
            </item>
