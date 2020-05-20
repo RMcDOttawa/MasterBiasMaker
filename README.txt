@@ -2,7 +2,7 @@ This program combines Bias Frames into a master bias.  If run without parameters
 window opens.  If run given a list of file names as args, then those are immediately processed
 without the UI interaction.
 
-	Tutorial Video:   https://vimeo.com/419600403/b80420f982
+	Tutorial Video:   https://youtu.be/JUxVWPX4was
 
 Files with same dimensions can be manually selected for combination, or you can point the program
 to a large set of files and have it automatically group them by dimensions or temperature
