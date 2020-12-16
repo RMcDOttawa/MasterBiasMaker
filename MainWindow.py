@@ -24,8 +24,13 @@ from Validators import Validators
 
 class MainWindow(QMainWindow):
 
-    def __init__(self, preferences: Preferences, data_model: DataModel):
-        """Initialize MainWindow class"""
+    def __init__(self, preferences: Preferences,
+                 data_model: DataModel):
+        """
+        Initialize the main window controller
+        :param preferences: Preferences object for application defaults
+        :param data_model:  Data model object for the current run
+        """
         self._preferences = preferences
         self._data_model = data_model
         QMainWindow.__init__(self)
@@ -150,7 +155,12 @@ class MainWindow(QMainWindow):
     # Catch window resizing so we can record the changed size
 
     def eventFilter(self, triggering_object: QObject, event: QEvent) -> bool:
-        """Event filter, looking for window resize events so we can remember the new size"""
+        """
+        Event filter, looking for window resize events so we can remember the new size
+        :param triggering_object:   Object trigger the event we will be inspecting
+        :param event:               The event we are inspecting for move or resize
+        :return:                    Always "false" indicating event still needs to be handled (we didn't)
+        """
         if isinstance(event, QResizeEvent):
             window_size = event.size()
             self._preferences.set_main_window_size(window_size)
@@ -318,7 +328,15 @@ class MainWindow(QMainWindow):
                 self.error_dialog("File Not Found", f"File \"{exception.filename}\" was not found or not readable")
         self.enable_buttons()
 
-    def error_dialog(self, brief_message: str, long_message: str, detailed_text: str = ""):
+    def error_dialog(self, brief_message: str,
+                     long_message: str,
+                     detailed_text: str = ""):
+        """
+        Produce a modal dialog giving an error message
+        :param brief_message:   Short form of message
+        :param long_message:    Long form of message
+        :param detailed_text:   Additional detail expanding on the situation
+        """
         dialog = QMessageBox()
         dialog.setText(brief_message)
         if len(long_message) > 0:
@@ -408,6 +426,9 @@ class MainWindow(QMainWindow):
     #   is create and run the console window.
     #
     def combine_selected_clicked(self):
+        """
+        The user has clicked "Combine", which is the "go ahead and do the work" button.
+        """
         if self.commit_fields_continue():
             # Get the list of selected files
             selected_files: [FileDescriptor] = self.get_selected_file_descriptors()
@@ -430,11 +451,14 @@ class MainWindow(QMainWindow):
             # So we'll exit now to encourage them to fix the error.
             pass
 
-    # Run the "editing finished" methods on all the inputs in case they have typed
-    # something but not hit tab or return to commit it - they will expect what they
-    # see to be what gets processed.  Then re-check if the Commit button is still enabled.
-
     def commit_fields_continue(self) -> bool:
+        """
+        Run the "editing finished" methods on all the inputs in case they have typed
+        something but not hit tab or return to commit it - they will expect what they
+        see to be what gets processed.  Then re-check if the Commit button is still enabled.
+
+        :return:    Indicator of whether Commit is still enabled - i.e. all is good to go.
+        """
         self.min_max_drop_changed()
         self.minimum_group_size_changed()
         self.sigma_threshold_changed()
@@ -444,13 +468,20 @@ class MainWindow(QMainWindow):
         return self.ui.combineSelectedButton.isEnabled()
 
     def get_group_output_directory(self) -> str:
+        """
+        Return the directory to be used for output from a grouped operation
+        :return:        Path name to directory
+        """
         dialog = QFileDialog()
         dialog.setFileMode(QFileDialog.DirectoryOnly)
         (file_name, _) = dialog.getSaveFileName(parent=None, caption="Output Directory")
         return None if len(file_name.strip()) == 0 else file_name
 
-    # Get the file descriptors corresponding to the selected table rows
     def get_selected_file_descriptors(self) -> [FileDescriptor]:
+        """
+        Get the file descriptors corresponding to the selected table rows
+        :return:        List of file descriptors for selected files
+        """
         table_descriptors: [FileDescriptor] = self._table_model.get_file_descriptors()
         selected_rows: [int] = self.ui.filesTable.selectionModel().selectedRows()
         result: [FileDescriptor] = []
@@ -459,28 +490,38 @@ class MainWindow(QMainWindow):
             result.append(table_descriptors[row_index])
         return result
 
-    # Prompt user for output file to receive combined file
     def get_output_file(self, suggested_file_path: str) -> str:
+        """
+        Prompt user for output file to receive combined file
+
+        :param suggested_file_path:     Path to start the dialog - most likely position, last used, etc.
+        :return:                        String of selected output path, None if Canceled
+        """
         dialog = QFileDialog()
         dialog.setFileMode(QFileDialog.AnyFile)
         (file_name, _) = dialog.getSaveFileName(parent=None, caption="Master File", directory=suggested_file_path,
                                                 filter="FITS files (*.FIT)")
         return None if len(file_name.strip()) == 0 else file_name
 
-    # Determine if there are enough files selected for the Min-Max algorithm
-    # If that algorithm isn't selected, then return True
-    # Otherwise there should be more files selected than 2*n, where n is the
-    # min-max clipping value
     def min_max_enough_files(self, num_selected: int) -> bool:
+        """
+        Determine if there are enough files selected for the Min-Max algorithm
+        If that algorithm isn't selected, then return True
+        Otherwise there should be more files selected than 2*n, where n is the
+        min-max clipping value
+        :param num_selected:    Number of files selected for processing
+        :return:                Indicator of whether Min-Max can be selected
+        """
         return True if self._data_model.get_master_combine_method() != Constants.COMBINE_MINMAX \
             else num_selected > (2 * self._data_model.get_min_max_number_clipped_per_end())
 
-    #
-    #   Get output path.  This is the directory to receive multiple files if we are group processing,
-    #   or the full path of a single file if not
-    #
-
     def get_appropriate_output_path(self, sample_file: FileDescriptor):
+        """
+        Get output path.  This is the directory to receive multiple files if we are group processing,
+        or the full path of a single file if not
+        :param sample_file:     File sample to provide needed metadata for file name
+        :return:                String of output path for file
+        """
         if self._data_model.get_group_by_size() \
                 or self._data_model.get_group_by_temperature():
             return self.get_group_output_directory()
@@ -491,10 +532,10 @@ class MainWindow(QMainWindow):
             return self.get_output_file(path)
             #todo test non-grouped for new suggested file name
 
-    #
-    #   Fill in the text fields in the main pane that summarize the settings
-    #
     def fill_options_readout(self):
+        """
+        Fill in the text fields in the main pane that summarize the settings
+        """
 
         # Selected combination algorithm
 
@@ -529,11 +570,15 @@ class MainWindow(QMainWindow):
         else:
             self.ui.dispositionInfo1.setText(self._data_model.get_disposition_subfolder_name())
 
-    #
-    #   The tab view has changed. Re-generate the options summary
-    #
     def tab_changed(self):
+        """
+        The tab view has changed. Re-generate the options summary
+        """
         self.fill_options_readout()
 
     def remove_from_ui(self, path_to_remove: str):
+        """
+        Remove the given file (by given path name) from the table of files in the UI
+        :param path_to_remove:  Path name of file to remove
+        """
         self._table_model.remove_file_path(path_to_remove)

@@ -27,6 +27,11 @@ class Constants:
 
     @classmethod
     def combine_method_string(cls, method: int) -> str:
+        """
+        Translate combination method code to meaningful string
+        :param method:  Integer code specifying combination method
+        :return:        String suitable for display on UI
+        """
         if method == cls.COMBINE_MEAN:
             return "Mean"
         elif method == cls.COMBINE_MEDIAN:
@@ -41,6 +46,11 @@ class Constants:
 
     @classmethod
     def disposition_string(cls, value: int) -> str:
+        """
+        Translate file disposition code to a meaningful string for display
+        :param value:   Code indicating file disposition
+        :return:        String suitable for display on UI
+        """
         if value == cls.INPUT_DISPOSITION_NOTHING:
             return "Nothing"
         else:
@@ -49,6 +59,11 @@ class Constants:
 
     @classmethod
     def calibration_string(cls, value: int) -> str:
+        """
+        Translate calibration type code to a human-readable string
+        :param value:   Code for calibration type
+        :return:        Human-readable string suitable for display
+        """
         # if value == cls.CALIBRATION_PROMPT:
         #     return "Prompt User"
         if value == cls.CALIBRATION_AUTO_DIRECTORY:

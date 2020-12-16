@@ -41,6 +41,8 @@ import numpy
 # import mean_shift_utils as ms_utils
 # Imported from former point_grouper file:
 
+# Comments in the methods below are author Matt's
+
 
 def euclidean_dist(point_a: numpy.ndarray, point_b: numpy.ndarray) -> float:
     if len(point_a) != len(point_b):

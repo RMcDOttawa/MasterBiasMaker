@@ -17,15 +17,19 @@ from SessionController import SessionController
 
 class ImageMath:
 
-    # Combine the files in the given list using a simple mean (average)
-    # Check, as reading, that they all have the same dimensions
-    # Return  the mean data array
-
     @classmethod
     def combine_mean(cls, file_names: [str],
                      console: Console,
                      session_controller: SessionController) -> ndarray:
-        """Combine FITS files in given list using simple mean.  Return an ndarray containing the combined data."""
+        """
+        Combine the files in the given list using a simple mean (average)
+        Check, as reading, that they all have the same dimensions
+        :param file_names:          Names of files to be combined
+        :param calibrator:          Calibration object, abstracting precalibration operations
+        :param console:             Redirectable console output handler
+        :param session_controller:  Controller for this subtask, checking for cancellation
+        :return:                    ndarray giving the 2-dimensional matrix of resulting pixel values
+        """
         assert len(file_names) > 0  # Otherwise the combine button would have been disabled
         console.push_level()
         console.message("Combining by simple mean", +1)
@@ -43,8 +47,18 @@ class ImageMath:
     # Example list:   [3, 8, 2, 1, 0, 4, 3, 2, 5, 3, 2, 9, 5, 1, 0, 3, 8, 4, 9, 2]
     @classmethod
     def calc_mm_clipped_mean(cls, column: numpy.array,
-                             number_dropped_values: int, console: Console,
+                             number_dropped_values: int,
+                             console: Console,
                              session_controller: SessionController) -> int:
+        """
+        Combine the files in the given list using a simple mean (average)
+        Check, as reading, that they all have the same dimensions
+        :param column:                  Array of values in the column for one pixel
+        :param number_dropped_values    Number of each of min and max values to discard
+        :param console:                 Redirectable console output handler
+        :param session_controller:      Controller for this subtask, checking for cancellation
+        :return:                        result of averaging the values after dropping the edges
+        """
         console.push_level()
         clipped_list = sorted(column.tolist())
         # Example List is now [0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 5, 5, 8, 8, 9, 9]
@@ -431,8 +445,19 @@ class ImageMath:
     #   the entire matrix.
 
     @classmethod
-    def min_max_clip_version_5(cls, file_data: ndarray, number_dropped_values: int,
-                               console: Console, session_controller: SessionController):
+    def min_max_clip_version_5(cls, file_data: ndarray,
+                               number_dropped_values: int,
+                               console: Console,
+                               session_controller: SessionController):
+        """
+        Combine the given list of images to a single image using min-max-clip algorithm, where minimum
+        and maximum values are dropped from each column, then the remaining values averaged.
+        :param file_data:               list of 2-dimensional matrices of image pixel values
+        :param number_dropped_values:   number of min and max values to drop from each column
+        :param console:                 redirectable console output handler
+        :param session_controller:      parent controller for this subtask (to check for cancellation)
+        :return:                        2-dimensional matrix representing resulting combined image
+        """
         console.push_level()
         console.message(f"Using min-max clip with {number_dropped_values} iterations", +1)
         masked_array = ma.MaskedArray(file_data)
@@ -525,9 +550,20 @@ class ImageMath:
     #
 
     @classmethod
-    def combine_sigma_clip(cls, file_names: [str], sigma_threshold: float,
+    def combine_sigma_clip(cls, file_names: [str],
+                           sigma_threshold: float,
                            console: Console,
                            session_controller: SessionController) -> Optional[ndarray]:
+        """
+        Combine the given list of images to a single image using sigma clip algorithm, where values more than
+        a given number of standard deviations from the mean are dropped, then the remaining values averaged.
+        :param file_names:              list of names of files to be combined
+        :param sigma_threshold:         Z-score threshold for dropping outliers
+        :param calibrator:              Object providing any needed image precalibration service
+        :param console:                 redirectable console output handler
+        :param session_controller:      parent controller for this subtask (to check for cancellation)
+        :return:                        2-dimensional matrix representing resulting combined image
+        """
         console.push_level()
         console.message(f"Combine by sigma-clipped mean, z-score threshold {sigma_threshold}", +1)
         file_data = numpy.asarray(RmFitsUtil.read_all_files_data(file_names))
@@ -599,6 +635,15 @@ class ImageMath:
     def combine_median(cls, file_names: [str],
                        console: Console,
                        session_controller: SessionController) -> ndarray:
+        """
+        Combine the files in the given list using a simple median
+        Check, as reading, that they all have the same dimensions
+        :param file_names:          Names of files to be combined
+        :param calibrator:          Calibration object, abstracting precalibration operations
+        :param console:             Redirectable console output handler
+        :param session_controller:  Controller for this subtask, checking for cancellation
+        :return:                    ndarray giving the 2-dimensional matrix of resulting pixel values
+        """
         assert len(file_names) > 0  # Otherwise the combine button would have been disabled
         console.push_level()
         console.message("Combine by simple Median", +1)
@@ -649,11 +694,20 @@ class ImageMath:
     #                       so generates identical results to options (0) through (3)
 
     @classmethod
-    def combine_min_max_clip(cls, file_names: [str], number_dropped_values: int,
+    def combine_min_max_clip(cls, file_names: [str],
+                             number_dropped_values: int,
                              console: Console,
                              session_controller: SessionController) -> Optional[ndarray]:
-        """Combine FITS files in given list using min/max-clipped mean.
-        Return an ndarray containing the combined data."""
+        """
+        Combine the files in the given list using min-max clip algorithm
+        Check, as reading, that they all have the same dimensions
+        :param file_names:              Names of files to be combined
+        :param number_dropped_values    Number of min and max values to drop from each column
+        :param calibrator:              Calibration object, abstracting precalibration operations
+        :param console:                 Redirectable console output handler
+        :param session_controller:      Controller for this subtask, checking for cancellation
+        :return:                        ndarray giving the 2-dimensional matrix of resulting pixel values
+        """
         success: bool
         assert len(file_names) > 0  # Otherwise the combine button would have been disabled
         # Get the data to be processed
@@ -761,6 +815,11 @@ class ImageMath:
 
     @classmethod
     def mean_exposure_and_temperature(cls, file_descriptors: [FileDescriptor]) -> (float, float):
+        """
+        Calculate mean exposure and mean temperature of given files, for description outputs
+        :param file_descriptors:    List of files whose attributes are to be averaged. Must be non-empty.
+        :return:                    Tuple (mean exposure, mean temperature)
+        """
         total_exposure = 0.0
         total_temperature = 0.0
         assert len(file_descriptors) > 0
@@ -771,5 +830,10 @@ class ImageMath:
 
     @classmethod
     def check_cancellation(cls, session_controller: SessionController):
+        """
+        Check with parent task to see if we have been cancelled.  Raise exception if so.
+        :param session_controller:      Parent controller object
+        :return:
+        """
         if session_controller.thread_cancelled():
             raise MasterMakerExceptions.SessionCancelled

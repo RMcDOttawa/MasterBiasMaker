@@ -16,6 +16,10 @@ class DataModel:
     # Create data model from given preferences object.  This also lists all the fetch/settable values
 
     def __init__(self, preferences: Preferences):
+        """
+        Create data model from given preferences object.  This also lists all the fetch/settable values
+        :param preferences:     Program preferences to establish model's default values
+        """
         self._master_combine_method: int = preferences.get_master_combine_method()
         self._min_max_number_clipped_per_end: int = preferences.get_min_max_number_clipped_per_end()
         self._sigma_clip_threshold: float = preferences.get_sigma_clip_threshold()

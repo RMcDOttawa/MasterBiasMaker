@@ -1,4 +1,8 @@
-
+#
+#   Custom exceptions that are used to indicate some problem, discovered deep in a processing loop,
+#   to the outer-level control loop.  We use the built-in Python exceptions whenever possible,
+#   and the following custom exceptions when necessary
+#
 
 #
 #   Group processing is selected, which puts created files in a directory

@@ -28,6 +28,13 @@ class CombineThreadWorker(QObject):
                  descriptors: [FileDescriptor],
                  output_path: str,
                  session_controller: SessionController):
+        """
+        Initialize the combine-thread-worker object
+        :param data_model:          Data Model giving all the relevant options for this job
+        :param descriptors:         List of files to be combined
+        :param output_path:         Absolute path name where combined result is to go
+        :param session_controller:  Session controller for this subtask
+        """
         QObject.__init__(self)
         self._data_model = data_model
         self._descriptors = descriptors
@@ -35,6 +42,9 @@ class CombineThreadWorker(QObject):
         self._session_controller = session_controller
 
     def run_combination_session(self):
+        """
+        Run the file-combination session represented by this object
+        """
         # Create a console output object.  This is passed in to the various math routines
         # to allow them to output progress.  We use this indirect method of getting progress
         # so that it can go to the console window in this case, but the same worker code can send
@@ -87,12 +97,23 @@ class CombineThreadWorker(QObject):
     #   frame in the user interface.
     #
     def console_callback(self, message: str):
+        """
+        The console object has produced a line it would like displayed.  We'll emit it as a signal
+        from this sub-thread, so it can be picked up by the main thread and displayed in the console
+        frame in the user interface.
+        :param message:     Message to be written to the command line or console window
+        """
         self.console_line.emit(message)
 
     #
     #   Error message from an exception.  Put it on the console
     #
     def error_dialog(self, short_message: str, long_message: str):
+        """
+        Display an error message from an exceptionon the console, with suitable formatting
+        :param short_message:       Brief description of the problem
+        :param long_message:        Longer explanatory text when it is available
+        """
         self.console_callback("*** ERROR *** " + short_message + ": " + long_message)
 
     #
@@ -102,4 +123,11 @@ class CombineThreadWorker(QObject):
     #
 
     def file_moved_callback(self, file_moved_from_path: str):
+        """
+        Method that is called back when a file is moved after being processed
+        Send this information back to the main task by emitting a signal.
+        This allows us to remove it from the user interface, since the path will no longer be valid
+
+        :param file_moved_from_path:    Where *was* the file that we just moved?
+        """
         self.remove_from_ui.emit(file_moved_from_path)

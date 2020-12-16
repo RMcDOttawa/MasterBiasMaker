@@ -20,7 +20,11 @@ class FitsFileTableModel(QAbstractTableModel):
     headings = ["Name", "Type", "Dimensions", "Binning", "Temp."]
 
     def __init__(self, table: QTableView, ignore_file_type: bool):
-        """Constructor for empty fits file table model"""
+        """
+        Constructor for empty fits file table model
+        :param table:                   The table view for which this is the data model
+        :param ignore_file_type:        Flag whether file types are being ignored
+        """
         QAbstractTableModel.__init__(self)
         self._files_list: [FileDescriptor] = []
         self._ignore_file_type = ignore_file_type
@@ -37,19 +41,33 @@ class FitsFileTableModel(QAbstractTableModel):
         self._files_list = file_descriptors
         self.endResetModel()
 
-    # Return how many rows (not including the header row) to display
     # noinspection PyMethodOverriding
     def rowCount(self, parent: QModelIndex) -> int:
+        """
+        Return how many rows (not including the header row) to display.  Called internally
+        by the table management code, not expected to be called by program code, though it can be.
+        :param parent:  QmodelIndex value, ignored for this simple table
+        :return:        Number of rows, not including header row - i.e. number of data rows
+        """
         return len(self._files_list)
 
-    # Return how many columns to display
     # noinspection PyMethodOverriding
     def columnCount(self, parent: QModelIndex) -> int:
+        """
+        Return how many columns to display.
+        :param parent:
+        :return:
+        """
         return len(self.headings)
 
-    # Get data element to display in a table cell
     # noinspection PyMethodOverriding
     def data(self, index: QModelIndex, role: Qt.DisplayRole):
+        """
+        Get data element to display in a table cell
+        :param index:   Row and column of the cell in question
+        :param role:    Type of operation for which this value is being retrieved
+        :return:        String to be displayed
+        """
         row_index: int = index.row()
         column_index: int = index.column()
         if role == Qt.DisplayRole:
@@ -76,6 +94,13 @@ class FitsFileTableModel(QAbstractTableModel):
 
     # noinspection PyMethodOverriding
     def headerData(self, item_number, orientation, role):
+        """
+        Return the value to be displayed as a header over a given column
+        :param item_number:     Column number
+        :param orientation:     Table header orientation (only Horizontal is used)
+        :param role:            Function asking - only Display is used
+        :return:                Header for the specified column
+        """
         result = QVariant()
         if (role == Qt.DisplayRole) and (orientation == Qt.Horizontal):
             if 0 <= item_number < len(self.headings):
@@ -91,6 +116,12 @@ class FitsFileTableModel(QAbstractTableModel):
 
     # noinspection PyMethodOverriding
     def sort(self, column_index: int, sort_order: Qt.SortOrder):
+        """
+        Sort the stored table data rows in response to a column being clicked.
+        Any selected rows are un-selected.
+        :param column_index:    Column on which to sort the rows
+        :param sort_order:      Sort ascending or descending?
+        """
         self.beginResetModel()
         reverse_flag = sort_order == Qt.DescendingOrder
         if column_index == 0:
@@ -116,9 +147,14 @@ class FitsFileTableModel(QAbstractTableModel):
         self.endResetModel()
         self._table.clearSelection()
 
-    # We only allow the selection of files that are known to be Bias frames.
     # Or, if the "ignore file type" flag is on, then we allow the selection of any files
     def flags(self, index: QModelIndex):
+        """
+        Filter row selection clicks so that we only allow the selection of files that are known to be FLAT frames.
+        Or, if the "ignore file type" flag is on, then we allow the selection of any files
+        :param index:   Row that has been clicked, potentially to be selected
+        :return:        Option bits indicating if item is selectable
+        """
         selectable_option: int
         if self._ignore_file_type:
             # We're ignoring internal FITS file type, so all rows are selectable
@@ -132,6 +168,9 @@ class FitsFileTableModel(QAbstractTableModel):
 
     # Clear all the data from the table
     def clear_table(self):
+        """
+        Clear all the data from the table - delete all rows
+        """
         self.beginResetModel()
         self._files_list = []
         self.endResetModel()
@@ -140,6 +179,11 @@ class FitsFileTableModel(QAbstractTableModel):
     # so the file path is no longer valid)
 
     def remove_files(self, descriptors):
+        """
+        Remove the given files (by name) from the table (probably because we have moved them
+        so the file path is no longer valid)
+        :param descriptors:     List of file descriptors to be removed
+        """
         descriptor: FileDescriptor
         for descriptor in descriptors:
             name_to_remove = descriptor.get_name()
@@ -155,6 +199,11 @@ class FitsFileTableModel(QAbstractTableModel):
     # Find and remove the file descriptor with the given absolute path name
 
     def remove_file_path(self, path_to_remove):
+        """
+        Find and remove the file descriptor with the given absolute path name
+        :param path_to_remove:      Absolute path name of file to be removed
+        :return:
+        """
         # Get index in the list of this path
         for row_index, descriptor in enumerate(self._files_list):
             if descriptor.get_absolute_path() == path_to_remove:

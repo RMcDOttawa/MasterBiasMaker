@@ -11,7 +11,11 @@ class MultiOsUtil:
 
     @classmethod
     def path_for_file_in_program_directory(cls, file_name: str) -> str:
-        """Determine full absolute path to a file located in the program directory"""
+        """
+        Determine full absolute path to a file located in the program directory
+        :param file_name:   Base file name
+        :return:            Full path situating that file name in the program directory
+        """
         program_full_path = os.path.realpath(__file__)
         directory_name = os.path.dirname(program_full_path)
         path_to_file = f"{directory_name}/{file_name}"

@@ -24,6 +24,14 @@ class ConsoleWindow(QDialog):
                  descriptors: [FileDescriptor],
                  output_path: str,
                  disposed_callback: Callable[[str], None]):
+        """
+        Initialize this object with needed data
+        :param preferences:         The program's Preferences object
+        :param data_model:          The data model for the current combination run
+        :param descriptors:         Descriptors of all the files being processed
+        :param output_path:         Path to receive output file(s)
+        :param disposed_callback:   Method to call when this window is disposed, for cleanup
+        """
         QDialog.__init__(self)
         self._disposed_callback = disposed_callback
         self._data_model = data_model
@@ -69,12 +77,23 @@ class ConsoleWindow(QDialog):
         self._qthread.start()
 
     def set_up_ui(self):
+        """
+        Set up the UI for this console window by installing an event filter that will
+        catch repositioning or resizing of the window, so we can remember that for future use.
+        :return:
+        """
         self.ui.installEventFilter(self)
 
     # Catch window resizing so we can record the changed size
 
     def eventFilter(self, triggering_object: QObject, event: QEvent) -> bool:
-        """Event filter, looking for window resize events so we can remember the new size"""
+        """
+        Catch window resizing so we can record the changed size.   Note this is called for
+        all events, so we must check if it's a resize event and quickly pass on others
+        :param triggering_object:       System object triggering the event
+        :param event:                   Event we're inspecting
+        :return:                        Always "False" indicating we didn't handle the event - it is still needed
+        """
         if isinstance(event, QResizeEvent):
             window_size = event.size()
             self._preferences.set_console_window_size(window_size)
@@ -84,10 +103,19 @@ class ConsoleWindow(QDialog):
         return False  # Didn't handle event
 
     def worker_thread_finished(self):
+        """
+        Method called when the subtask is finished, so we can clean it up and restore the
+        window buttons (e.g. "Cancel") to their normal state.
+        """
         self._qthread.quit()
         self.buttons_active_state(False)
 
     def add_to_console(self, message: str):
+        """
+        Add given line of text to the console pane in the current window, scrolling to ensure it is in view.
+        Since these requests are coming from a subtask, the window update is done as a thread-locked block.
+        :param message:     Text to be added to console
+        """
         self._signal_mutex.lock()
         # Create the text line to go in the console
         list_item: QListWidgetItem = QListWidgetItem(message)
@@ -98,15 +126,24 @@ class ConsoleWindow(QDialog):
         self._signal_mutex.unlock()
 
     def buttons_active_state(self, active: bool):
+        """
+        Set window buttons to the appropriate state for when the subtask is active.  i.e. when the subtask
+        is running, we allow Cancel but don't allow any other button clicks; when the subtask is not running
+        we allow other button clicks but not Cancel.
+        :param active:      Whether subtask is running
+        """
         self.ui.cancelButton.setEnabled(active)
         self.ui.closeButton.setEnabled(not active)
 
     def cancel_button_clicked(self):
+        """Cancel button has been clicked.  Note that on the console, and cancel the subtask."""
         self.add_to_console("Cancelling....")
         self._session_controller.cancel_thread()
 
     def close_button_clicked(self):
+        """Close Button, which simply closes the current window"""
         self.ui.close()
 
     def remove_from_ui(self, path_to_remove: str):
+        """Catch the fact that the window has been closed and inform other interested parties"""
         self._disposed_callback(path_to_remove)

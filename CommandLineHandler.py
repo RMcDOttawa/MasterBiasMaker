@@ -19,11 +19,18 @@ from SessionController import SessionController
 class CommandLineHandler:
 
     def __init__(self, args, data_model: DataModel):
+        """
+        Initialize this object
+        :param args:        Text arguments given on the unix command line
+        :param data_model:  Data model describing the program options (initialized with defaults)
+        """
         self._args = args
         self._data_model: DataModel = data_model
 
     def execute(self):
-        """Execute the program with the options specified on the command line, no GUI"""
+        """
+        Execute the program with the options specified on the command line, no GUI
+        """
         valid: bool
         file_names: [str]
         single_output_path: str
@@ -44,7 +51,12 @@ class CommandLineHandler:
     #   Returns:  validity flag, output path if specified, array of file names
 
     def validate_inputs(self) -> (bool, [str]):
-        """Validate command-line arguments and consolidate them with preferences for any missing settings"""
+        """
+        Validate command-line arguments already stored in the object,
+        and consolidate them with preferences for any missing settings.
+        See the method source for an introductory comment listing all the validations that are done.
+        :return: Tuple, a validity boolean, the output path, and a list of input file paths
+        """
         valid = True
         args = self._args
         file_names = []
@@ -139,8 +151,16 @@ class CommandLineHandler:
 
     #   The main processing method that combines the files using the selected algorithm
 
-    def process_files(self, file_names: [str], output_path: str, groups_output_directory: str) -> bool:
-        """Process all the files listed in the command line, with the given combination settings"""
+    def process_files(self, file_names: [str],
+                      output_path: str,
+                      groups_output_directory: str) -> bool:
+        """
+        Process all the files listed in the command line, with the given combination settings
+        :param file_names:                  List of file path names to be processed
+        :param output_path:                 Path where output is to be placed
+        :param groups_output_directory:     Path for output directory if grouping option is used
+        :return:                            Success indicator
+        """
         success = True
         file_descriptors = RmFitsUtil.make_file_descriptions(file_names)
         # check types are all bias
@@ -153,11 +173,19 @@ class CommandLineHandler:
             success = False
         return success
 
-    def run_combination_session(self, descriptors: [FileDescriptor], output_path: str, output_directory: str):
-        # Create a console output object.  This is passed in to the various math routines
-        # to allow them to output progress.  We use this indirect method of getting progress
-        # so that it can go to the console window in this case, but the same worker code can send
-        # progress lines to the standard system output when being run from the command line
+    def run_combination_session(self, descriptors: [FileDescriptor],
+                                output_path: str,
+                                output_directory: str):
+        """
+        Create a console output object.  This is passed in to the various math routines
+        to allow them to output progress.  We use this indirect method of getting progress
+        so that it can go to the console window in this case, but the same worker code can send
+        progress lines to the standard system output when being run from the command line
+
+        :param descriptors:         File descriptors of all input files to be processed
+        :param output_path:         Path for single combined output file
+        :param output_directory:    Path for output directory if grouping is in use
+        """
         console = ConsoleSimplePrint()
         console.message("Starting session", 0)
         # A "session controller" is necessary, but has an interesting effect only in the GUI version.
@@ -206,7 +234,15 @@ class CommandLineHandler:
     def make_output_path(self,
                          output_path_parameter,
                          file_descriptors: [FileDescriptor]) -> str:
-        """Create a suitable output file name, fully-qualified"""
+        """
+        Create a suitable output file name, fully-qualified
+        If file name is specified on command line, use that.
+        Otherwise make up a file name and a path that places it in the same
+        location as the first input file.
+        :param output_path_parameter:       Given information about the output path
+        :param file_descriptors:            Description of all the files being processed
+        :return:                            Created output path name
+        """
         if output_path_parameter == "":
             return self.create_output_path(file_descriptors[0],
                                            self._data_model.get_master_combine_method(),
@@ -219,8 +255,16 @@ class CommandLineHandler:
     #   of the form Bias-Mean-yyyymmddhhmm-temp-x-y-bin.fit
     @classmethod
     def create_output_path(cls, sample_input_file: FileDescriptor,
-                           combine_method: int, sigma_threshold: float, min_max_clipped: int):
-        """Create an output file name in the case where one wasn't specified"""
+                           combine_method: int,
+                           sigma_threshold: float,
+                           min_max_clipped: int):
+        """
+        Create an output file name in the case where one wasn't specified
+        :param sample_input_file:       Input file to be used for data in output file name
+        :param combine_method:          Code for the type of combination done
+        :param sigma_threshold:         SIGMA parameter if sigma-clip method in use
+        :param min_max_clipped:         Min-Max clip parameter if min-max-clip method in use
+        """
         # Get directory of sample input file
         directory_prefix = os.path.dirname(sample_input_file.get_absolute_path())
         file_name = cls.get_file_name_portion(combine_method, sample_input_file,
@@ -229,9 +273,19 @@ class CommandLineHandler:
         return file_path
 
     @classmethod
-    def get_file_name_portion(cls, combine_method, sample_input_file,
-                                              sigma_threshold, min_max_clipped):
-        # Get other components of name
+    def get_file_name_portion(cls,
+                              combine_method: int,
+                              sample_input_file: FileDescriptor,
+                              sigma_threshold: float,
+                              min_max_clipped: int) -> str:
+        """
+        Return the file name portion (no directory paths) of a generated file name for the given combine method
+        :param combine_method:      Code for the type of combination being done
+        :param sample_input_file:   Input file used as representative of output parameters
+        :param sigma_threshold:     Threshold value if sigma-clip in use
+        :param min_max_clipped:     Number of clips if min-max clip in use
+        :return:                    Generated file name
+        """
         now = datetime.now()
         date_time_string = now.strftime("%Y%m%d-%H%M")
         temperature = f"{sample_input_file.get_temperature():.1f}"
@@ -256,4 +310,9 @@ class CommandLineHandler:
     #   Error message from an exception.  Put it on the console
     #
     def error_dialog(self, short_message: str, long_message: str):
+        """
+        Put error message from a program exception on the console.
+        :param short_message:   Brief form of message
+        :param long_message:    More detail if available
+        """
         print("*** ERROR *** " + short_message + ":\n   " + long_message)

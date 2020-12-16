@@ -23,6 +23,11 @@ class FileCombiner:
 
     def __init__(self, session_controller: SessionController,
                  file_moved_callback: Callable[[str], None]):
+        """
+        Initialize this object
+        :param session_controller:      Controller the parent uses to control this subtask
+        :param file_moved_callback:     Callback method to inform that we have moved a processed file
+        """
         self.callback_method = file_moved_callback
         self._session_controller = session_controller
 
@@ -32,6 +37,14 @@ class FileCombiner:
                                         data_model: DataModel,
                                         output_file: str,
                                         console: Console):
+        """
+        Process one set of files to a single output file.
+        Output to the given path, if provided.  If not provided, prompt the user for it.
+        :param selected_files:      List of descriptions of files to be combined
+        :param data_model:          Data model that gives combination method and other options
+        :param output_file:         Path for the combined output file
+        :param console:             Re-directable console output object
+        """
         console.push_level()
         console.message("Using single-file processing", +1)
         # We'll use the first file in the list as a sample for things like image size
@@ -62,16 +75,19 @@ class FileCombiner:
         console.message("Combining complete", 0)
         console.pop_level()
 
-    #
-    #   Process the given selected files in groups by size, exposure, or temperature (or any combination)
-    #
-    #   Exceptions thrown:
-    #       NoGroupOutputDirectory      Output directory does not exist and unable to create it
-    
     def process_groups(self, data_model: DataModel,
                        selected_files: [FileDescriptor],
                        output_directory: str,
                        console: Console):
+        """
+        Process the given selected files in groups by size, exposure, or temperature (or any combination)
+        Exceptions thrown:
+            NoGroupOutputDirectory      Output directory does not exist and unable to create it
+        :param data_model:          Data model specifying options for the current run
+        :param selected_files:      List of descriptions of files to be grouped then processed
+        :param output_directory:    Directory to contain output files from processed groups
+        :param console:             Re-directable console output object
+        """
         console.push_level()
         self.check_cancellation()
         temperature_bandwidth = data_model.get_temperature_group_bandwidth()
@@ -128,12 +144,6 @@ class FileCombiner:
         console.message("Group combining complete", 0)
         console.pop_level()
 
-    # Process one group of files, output to the given directory
-    #
-    #   Exceptions thrown:
-    #       NotAllBiasFrames        The given files are not all bias frames
-    #       IncompatibleSizes       The given files are not all the same dimensions
-    
     def process_one_group(self,
                           data_model: DataModel,
                           descriptor_list: [FileDescriptor],
@@ -141,6 +151,19 @@ class FileCombiner:
                           combine_method: int,
                           disposition_folder_name,
                           console: Console):
+        """
+        Process one group of files, output to the given directory
+        Exceptions thrown:
+            NotAllFlatFrames        The given files are not all flat frames
+            IncompatibleSizes       The given files are not all the same dimensions
+
+        :param data_model:                  Data model giving options for current run
+        :param descriptor_list:             List of all the files in one group, for processing
+        :param output_directory:            Path to directory to receive the output file
+        :param combine_method:              Code saying how these files should be combined
+        :param disposition_folder_name:     If files to be moved after processing, name of receiving folder
+        :param console:                     Re-directable console output object
+        """
         assert len(descriptor_list) > 0
         sample_file: FileDescriptor = descriptor_list[0]
         console.push_level()
@@ -176,14 +199,20 @@ class FileCombiner:
             raise MasterMakerExceptions.IncompatibleSizes
         console.pop_level()
 
-    # Move the given files if the given disposition type requests it.
-    # Return a list of any files that were moved so the UI can be adjusted if necessary
-    
     def handle_input_files_disposition(self,
                                        disposition_type: int,
                                        sub_folder_name: str,
                                        descriptors: [FileDescriptor],
                                        console: Console):
+        """
+        Move the given files if the given disposition type requests it.
+        Return a list of any files that were moved so the UI can be adjusted if necessary
+
+        :param disposition_type:        Code for what to do with file after processing
+        :param sub_folder_name:         Where to put file if we're moving it
+        :param descriptors:             List of files for potential processing
+        :param console:                 Redirectable console output option
+        """
         if disposition_type == Constants.INPUT_DISPOSITION_NOTHING:
             # User doesn't want us to do anything with the input files
             return
@@ -197,20 +226,28 @@ class FileCombiner:
                     # Successfully moved the file;  tell the user interface
                     self.callback_method(descriptor.get_absolute_path())
 
-    # Determine if all the files in the list are of the given type
-
     @classmethod
     def all_of_type(cls, selected_files: [FileDescriptor], type_code: int):
+        """
+        Determine if all the files in the list are of the given type
+
+        :param selected_files:  List of files to be checked
+        :param type_code:       Type code files are to be tested against
+        :return:                True if all files in list are of given type
+        """
         for descriptor in selected_files:
             if descriptor.get_type() != type_code:
                 return False
         return True
 
-    # Confirm that the given list of files are combinable by being compatible sizes
-    # This means their x,y dimensions are the same and their binning is the same
-
     @classmethod
     def all_compatible_sizes(cls, selected_files: [FileDescriptor]):
+        """
+        Confirm that the given list of files are combinable by being compatible sizes
+        This means their x,y dimensions are the same and their binning is the same
+        :param selected_files:  List of files (FileDescriptors) to be checked for combinability
+        :return:                True if all files are compatible
+        """
         if len(selected_files) == 0:
             return True
         (x_dimension, y_dimension) = selected_files[0].get_dimensions()
@@ -221,9 +258,12 @@ class FileCombiner:
                 return False
         return True
 
-    # Determine if all the files in the list have the same filter name
-    
     def all_same_filter(self, selected_files: [FileDescriptor]) -> bool:
+        """
+        Determine if all files in list use the same filter
+        :param selected_files:      List of FileDescriptors of files to be tested
+        :return:                    True if all use the same filter
+        """
         if len(selected_files) == 0:
             return True
         filter_name = selected_files[0].get_filter_name()
@@ -232,11 +272,17 @@ class FileCombiner:
                 return False
         return True
 
-    # Determine if all the dimensions are OK to proceed.
-    #   All selected files must be the same size and the same binning
-    #
     @classmethod
     def validate_file_dimensions(cls, descriptors: [FileDescriptor]) -> bool:
+        """
+        Determine if the dimensions of all the supplied files are the same.
+        All selected files must be the same size and the same binning.
+        Include the precalibration bias or dark file in this test if that method is selected.
+
+        :param descriptors:     Files to be checked for compatibility
+        :param data_model:      Data model gives precalibration type and file if needed
+        :return:                True if all files are the same size and binning, so compatible
+        """
         # Get list of paths of selected files
         if len(descriptors) > 0:
 
@@ -259,10 +305,16 @@ class FileCombiner:
 
         return True
 
-    # Given list of file descriptors, return a list of lists, where each outer list is all the
-    # file descriptors with the same size (dimensions and binning)
-
     def get_groups_by_size(self, selected_files: [FileDescriptor], is_grouped: bool) -> [[FileDescriptor]]:
+        """
+        Given list of file descriptors, return a list of lists, where each outer list is all the
+        file descriptors with the same size (dimensions and binning).  If "is_grouped" is False,
+        just return all the files in one group.
+
+        :param selected_files:      List of files to be grouped
+        :param is_grouped:          Flag whether size grouping is to be performed
+        :return:                    List of lists - one outer list per size group
+        """
         if is_grouped:
             descriptors_sorted = sorted(selected_files, key=FileDescriptor.get_size_key)
             descriptors_grouped = groupby(descriptors_sorted, FileDescriptor.get_size_key)
@@ -274,19 +326,21 @@ class FileCombiner:
         else:
             return [selected_files]   # One group with all the files
 
-    # Given list of file descriptors, return a list of lists, where each outer list is all the
-    # file descriptors with the same temperature within a given tolerance
-    # Note that, because of the "tolerance" comparison, this is a clustering analysis, not
-    # a simple python "groupby", which assumes the values are exact.
-    #
-    # For this simple 1-dimensional clustering we can use the MeanShift function from
-    # the machine learning package, sklearn
-    #
-
     def get_groups_by_temperature(self,
                                   selected_files: [FileDescriptor],
                                   is_grouped: bool,
                                   bandwidth: float) -> [[FileDescriptor]]:
+        """
+        Given list of file descriptors, return a list of lists, where each outer list is all the
+        file descriptors with the same temperature within a given tolerance
+        Note that, because of the "tolerance" comparison, this is a clustering analysis, not
+        a simple python "groupby", which assumes the values are exact.
+
+        :param selected_files:      List of files to be grouped
+        :param is_grouped:          Flag whether size grouping is to be performed
+        :param bandwidth:           Bandwidth of sensitivity of clustering algorithm
+        :return:                    List of lists - one outer list per temperature group
+        """
         if is_grouped:
             # We'll get the indices of the temperature clusters, then use those indices
             # on the file descriptors
@@ -355,14 +409,21 @@ class FileCombiner:
     #     else:
     #         return [selected_files]   # One group with all the files
 
-    # Combine the given files, output to the given output file
-    # Use the combination algorithm given by the radio buttons on the main window
-    
     def combine_files(self, input_files: [FileDescriptor],
                       data_model: DataModel,
                       filter_name: str,
                       output_path: str,
                       console: Console):
+        """
+        Combine the given files, output to the given output file using the combination
+        method defined in the data model.
+
+        :param input_files:     List of files to be combined
+        :param data_model:      Data model with options for this run
+        :param filter_name:     Human-readable filter name (for output file name and FITS comment)
+        :param output_path:     Path for output fiel to be created
+        :param console:         Redirectable console output object
+        """
         console.push_level()
         substituted_file_name = SharedUtils.substitute_date_time_filter_in_string(output_path)
         file_names = [d.get_absolute_path() for d in input_files]
@@ -415,6 +476,13 @@ class FileCombiner:
         console.pop_level()
 
     def describe_group(self, data_model: DataModel, number_files: int, sample_file: FileDescriptor, console: Console):
+        """
+        Display, on the console, a descriptive text string for the group being processed, using a given sample file
+        :param data_model:      Data model giving the processing options
+        :param number_files:    Number of files in the group being processed
+        :param sample_file:     Sample file, representative of the characterstics of files in the group
+        :param console:         Redirectable output console
+        """
         binning = sample_file.get_binning()
         temperature = sample_file.get_temperature()
         processing_message = ""
@@ -427,5 +495,9 @@ class FileCombiner:
         console.message(f"Processing {number_files} files {processing_message}", +1)
 
     def check_cancellation(self):
+        """
+        Check back with the parent of this subtask to see if we have been cancelled.
+        Raise a "cancelled" exception if so.
+        """
         if self._session_controller.thread_cancelled():
             raise MasterMakerExceptions.SessionCancelled
